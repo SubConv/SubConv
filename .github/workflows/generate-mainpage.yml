@@ -1,0 +1,54 @@
+name: Genarate static mainpage
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - mainpage/**
+      - .github/workflows/generate-mainpage.yml
+
+env:
+  TZ: Asia/Shanghai
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.repository == 'SubConv/SubConv'
+    defaults:
+      run:
+        working-directory: mainpage
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.15.0
+          cache: npm
+          cache-dependency-path: mainpage/package-lock.json
+      - name: Install Dependencies
+        run: npm install --prefer-offline
+      - name: Build
+        run: npm run build
+      - name: move to static
+        run: |
+          pwd
+          if [ ! -d "../static" ]; then
+            mkdir -p ../static
+          else
+            rm -rf ../static/*
+          fi
+          mv dist/* ../static
+          git config --global user.name 'Git bot'
+          git config --global user.email 'bot@noreply.github.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add -A
+          git commit -am "update static" && git push || echo "No changes to commit"
