@@ -12,13 +12,15 @@ import requests
 def getRule(sort, url):
     result = ""
     item = requests.get(url).text
-    item = item.split('\n')
+    item = item.splitlines()
     i = 0
     while i < len(item):
         tem = item[i]
-        if "" == tem or "#" == tem[0]\
-                or "USER-AGENT" in tem\
-                or "URL-REGEX" in tem:
+        if "" == tem\
+                or tem.lstrip().startswith("#")\
+                or tem.lstrip().startswith("USER-AGENT")\
+                or tem.lstrip().startswith("URL-REGEX")\
+                or tem.lstrip().startswith("PROCESS-NAME"):
             item.remove(tem)
             i -= 1
         else:

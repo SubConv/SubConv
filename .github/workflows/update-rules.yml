@@ -12,6 +12,8 @@ on:
     paths:
         - '*.list'
         - '.github/workflows/update-rules.yml'
+        - 'mkcache.py'
+        - 'modules/rule.py'
         - 'config.py'
 permissions:
   contents: write
