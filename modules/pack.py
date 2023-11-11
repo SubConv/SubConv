@@ -154,9 +154,10 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                     "type": "select",
                     "proxies": [
                         "DIRECT",
+                        "REJECT",
                         "🚀 节点选择",
                         *regionGroups,
-                        "🚀 手动切换"
+                        *[_group["name"] for _group in config.custom_proxy_group if _group.get("rule") == False]
                     ]
                 })
             elif prior == "REJECT":
@@ -168,7 +169,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                         "DIRECT",
                         "🚀 节点选择",
                         *regionGroups,
-                        "🚀 手动切换"
+                        *[_group["name"] for _group in config.custom_proxy_group if _group.get("rule") == False]
                     ]
                 })
             else:
@@ -178,8 +179,9 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                     "proxies": [
                         "🚀 节点选择",
                         *regionGroups,
-                        "🚀 手动切换",
-                        "DIRECT"
+                        *[_group["name"] for _group in config.custom_proxy_group if _group.get("rule") == False],
+                        "DIRECT",
+                        "REJECT"
                     ]
                 })
 
