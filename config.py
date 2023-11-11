@@ -55,7 +55,13 @@ custom_proxy_group = [
         "rule": False
     },
     {
-        "name": "🚀 手动切换",
+        "name": "🚀 手动切换1",
+        "type": "select",
+        "manual": True,
+        "rule": False
+    },
+    {
+        "name": "🚀 手动切换2",
         "type": "select",
         "manual": True,
         "rule": False
