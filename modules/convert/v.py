@@ -54,7 +54,7 @@ def handleVShareLink(names: dict, url: urlparse.ParseResult, scheme: str, proxy:
         network = "h2"
     proxy["network"] = network
     if network == "tcp":
-        if fakeType != "none":
+        if fakeType != "none" and fakeType != "":
             headers = {}
             httpOpts = {}
             httpOpts["path"] = "/"
