@@ -42,7 +42,7 @@ def getFullRule():
         if i[1][:2] != "[]":
             result += getRule(i[0], i[1])
         else:
-            if i[1][2:] != "FINAL":
+            if i[1][2:] != "FINAL" and i[1][2:] != "MATCH":
                 result += "  - " + i[1][2:] + "," + i[0] +"\n"
             else:
                 result += "  - MATCH," + i[0]
