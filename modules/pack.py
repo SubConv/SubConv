@@ -76,7 +76,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                             "enable": True,
                             "interval": 60,
                             # "lazy": True,
-                            "url": "https://www.apple.com/library/test/success.html"
+                            "url": config.test_url
                         }
                     }
                 })
@@ -92,7 +92,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                             "enable": True,
                             "interval": 60,
                             # "lazy": True,
-                            "url": "https://www.apple.com/library/test/success.html"
+                            "url": config.test_url
                         }
                     }
                 })
@@ -260,15 +260,15 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                 if proxyGroup is not None:
                     if type == "load-balance":
                         proxyGroup["strategy"] = "consistent-hashing"
-                        proxyGroup["url"] = "https://www.apple.com/library/test/success.html"
+                        proxyGroup["url"] = config.test_url
                         proxyGroup["interval"] = 60
                         proxyGroup["tolerance"] = 50
                     elif type == "fallback":
-                        proxyGroup["url"] = "https://www.apple.com/library/test/success.html"
+                        proxyGroup["url"] = config.test_url
                         proxyGroup["interval"] = 60
                         proxyGroup["tolerance"] = 50
                     elif type == "url-test":
-                        proxyGroup["url"] = "https://www.apple.com/library/test/success.html"
+                        proxyGroup["url"] = config.test_url
                         proxyGroup["interval"] = 60
                         proxyGroup["tolerance"] = 50
             else:
@@ -291,7 +291,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
         urlTest = {
             "name": total[i][1],
             "type": "url-test",
-            "url": "https://www.apple.com/library/test/success.html",
+            "url": config.test_url,
             "interval": 60,
             "tolerance": 50,
             "filter": total[i][0]

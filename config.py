@@ -1,4 +1,7 @@
 
+# test_url = "https://www.apple.com/library/test/success.html"
+test_url = "https://www.gstatic.com/generate_204"
+
 ruleset = [
     ["🤖 ChatBot", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/OpenAi.list"],
     ["🤖 ChatBot", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/ChatBot.list"],
