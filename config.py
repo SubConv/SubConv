@@ -13,6 +13,7 @@ ruleset = [
     ["🛑 广告拦截", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/BanEasyListChina.list"],
     ["🛡️ 隐私防护", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/BanEasyPrivacy.list"],
     ["📢 谷歌FCM", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/GoogleFCM.list"],
+    ["📢 谷歌服务", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/Google.list"],
     # ["🎯 全球直连", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/GoogleCN.list"],
     ["🎯 全球直连", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/Adobe.list"],
     ["Ⓜ️ Bing", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Bing.list"],
@@ -130,6 +131,11 @@ custom_proxy_group = [
         "name": "📢 谷歌FCM",
         "type": "select",
         "prior": "DIRECT"
+    },
+    {
+        "name": "📢 谷歌服务",
+        "type": "select",
+        "prior": "PROXY"
     },
     {
         "name": "Ⓜ️ Bing",
