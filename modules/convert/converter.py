@@ -11,7 +11,7 @@ from modules.convert.v import handleVShareLink
 import json
 import base64
 import urllib.parse as urlparse
-import distutils
+import distutils.util
 
 
 async def ConvertsV2Ray(buf):
@@ -72,6 +72,42 @@ async def ConvertsV2Ray(buf):
                 distutils.util.strtobool(query.get("insecure")))
 
             proxies.append(hysteria)
+        elif scheme == "hysteria2":
+            # apply f6bf9c08577060bb199c2f746c7d91dd3c0ca7b9 from mihomo
+            try:
+                urlHysteria2 = urlparse.urlparse(line)
+            except:
+                continue
+
+            query = dict(urlparse.parse_qsl(urlHysteria2.query))
+            name = uniqueName(names, urlparse.unquote(urlHysteria2.fragment))
+            hysteria2 = {}
+
+            hysteria2["name"] = name
+            hysteria2["type"] = scheme
+            hysteria2["server"] = urlHysteria2.hostname
+            port = get(query.get("port"))
+            if port != "":
+                hysteria2["port"] = port
+            else:
+                hysteria2["port"] = 443
+            hysteria2["obfs"] = query.get("obfs")
+            hysteria2["obfs-password"] = query.get("obfs-password")
+            hysteria2["sni"] = query.get("sni")
+            hysteria2["skip-cert-verify"] = bool(
+                distutils.util.strtobool(query.get("insecure")))
+            alpn = get(query.get("alpn"))
+            if alpn != "":
+                hysteria2["alpn"] = alpn.split(",")
+            auth = get(urlHysteria2.username)
+            if auth != "":
+                hysteria2["password"] = auth
+            hysteria2["fingerprint"] = get(query.get("pinSHA256"))
+            hysteria2["down"] = get(query.get("down"))
+            hysteria2["up"] = get(query.get("up"))
+
+            proxies.append(hysteria2)
+
         elif scheme == "tuic":
             # A temporary unofficial TUIC share link standard
             # Modified from https://github.com/daeuniverse/dae/discussions/182
