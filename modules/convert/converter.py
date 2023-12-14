@@ -72,7 +72,7 @@ async def ConvertsV2Ray(buf):
                 distutils.util.strtobool(query.get("insecure")))
 
             proxies.append(hysteria)
-        elif scheme == "hysteria2":
+        elif scheme == "hysteria2" or scheme == "hy2":
             # apply f6bf9c08577060bb199c2f746c7d91dd3c0ca7b9 from mihomo
             try:
                 urlHysteria2 = urlparse.urlparse(line)
@@ -86,14 +86,18 @@ async def ConvertsV2Ray(buf):
             hysteria2["name"] = name
             hysteria2["type"] = scheme
             hysteria2["server"] = urlHysteria2.hostname
-            port = get(query.get("port"))
+            port = get(urlHysteria2.port)
             if port != "":
-                hysteria2["port"] = port
+                hysteria2["port"] = int(port)
             else:
                 hysteria2["port"] = 443
-            hysteria2["obfs"] = query.get("obfs")
-            hysteria2["obfs-password"] = query.get("obfs-password")
-            hysteria2["sni"] = query.get("sni")
+            obfs = get(query.get("obfs"))
+            if obfs != "" and obfs not in ["none", "None"]:
+                hysteria2["obfs"] = query.get("obfs")
+                hysteria2["obfs-password"] = get(query.get("obfs-password"))
+            sni = get(query.get("sni"))
+            if sni != "":
+                hysteria2["sni"] = query.get("sni")
             hysteria2["skip-cert-verify"] = bool(
                 distutils.util.strtobool(query.get("insecure")))
             alpn = get(query.get("alpn"))
