@@ -285,17 +285,6 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
             if proxyGroup is not None:
                 proxyGroups["proxy-groups"].append(proxyGroup)
 
-    # remove proxies that do not exist in any proxy group
-    proxyGroupAndProxyList = [i["name"] for i in proxyGroups["proxy-groups"]]
-    if proxiesStandbyName is not None:
-        proxyGroupAndProxyList.extend(proxiesStandbyName)
-    for proxygroup in proxyGroups["proxy-groups"]:
-        if "proxies" not in proxygroup:
-            continue
-        for proxy in proxygroup["proxies"]:
-            if proxy not in proxyGroupAndProxyList:
-                proxygroup["proxies"].remove(proxy)
-
     # add region groups
     for i in total:
         urlTest = {
@@ -322,6 +311,18 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
             else:
                 urlTestProxies = None
         proxyGroups["proxy-groups"].append(urlTest)
+
+    # remove proxies that do not exist in any proxy group
+    proxyGroupAndProxyList = (["DIRECT", "REJECT"])
+    proxyGroupAndProxyList.extend([i["name"] for i in proxyGroups["proxy-groups"]])
+    if proxiesStandbyName is not None:
+        proxyGroupAndProxyList.extend(proxiesStandbyName)
+    for proxygroup in proxyGroups["proxy-groups"]:
+        if "proxies" not in proxygroup:
+            continue
+        for proxy in proxygroup["proxies"]:
+            if proxy not in proxyGroupAndProxyList:
+                proxygroup["proxies"].remove(proxy)
 
     result.update(proxyGroups)
 
