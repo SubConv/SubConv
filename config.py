@@ -16,7 +16,7 @@ ruleset = [
     ["📢 谷歌服务", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/Google.list"],
     # ["🎯 全球直连", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/GoogleCN.list"],
     ["🎯 全球直连", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/Adobe.list"],
-    ["Ⓜ️ Bing", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Bing.list"],
+    ["Ⓜ️ 微软Bing", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Bing.list"],
     ["Ⓜ️ 微软云盘", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/OneDrive.list"],
     ["Ⓜ️ 微软服务", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Microsoft.list"],
     ["🍎 苹果服务", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Apple.list"],
@@ -138,7 +138,7 @@ custom_proxy_group = [
         "prior": "PROXY"
     },
     {
-        "name": "Ⓜ️ Bing",
+        "name": "Ⓜ️ 微软Bing",
         "type": "select",
         "prior": "PROXY"
     },
