@@ -287,8 +287,11 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
 
     # remove proxies that do not exist in any proxy group
     proxyGroupAndProxyList = [i["name"] for i in proxyGroups["proxy-groups"]]
-    proxyGroupAndProxyList.extend(proxiesStandbyName)
+    if proxiesStandbyName is not None:
+        proxyGroupAndProxyList.extend(proxiesStandbyName)
     for proxygroup in proxyGroups["proxy-groups"]:
+        if "proxies" not in proxygroup:
+            continue
         for proxy in proxygroup["proxies"]:
             if proxy not in proxyGroupAndProxyList:
                 proxygroup["proxies"].remove(proxy)
