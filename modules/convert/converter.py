@@ -96,8 +96,10 @@ async def ConvertsV2Ray(buf):
                 hysteria2["obfs"] = query.get("obfs")
                 hysteria2["obfs-password"] = get(query.get("obfs-password"))
             sni = get(query.get("sni"))
+            if sni == "":
+                sni = get(query.get("peer"))
             if sni != "":
-                hysteria2["sni"] = query.get("sni")
+                hysteria2["sni"] = sni
             hysteria2["skip-cert-verify"] = bool(
                 distutils.util.strtobool(query.get("insecure")))
             alpn = get(query.get("alpn"))
