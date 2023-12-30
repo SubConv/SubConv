@@ -10,6 +10,10 @@ HEAD = {
     "log-level": "info",
     "external-controller": ":9090"
 }
+DNS_ABROAD = [
+    "https://1.1.1.1/dns-query",
+    "https://8.8.8.8/dns-query"
+]
 DNS = {
     "dns": {
         "enable": True,
@@ -19,21 +23,18 @@ DNS = {
             "8.8.8.8",
             "1.1.1.1"
         ],
+        "nameserver-policy": {
+            "geosite:gfw,geolocation-!cn": DNS_ABROAD
+        },
         "nameserver": [
             "https://223.5.5.5/dns-query",
             "https://1.12.12.12/dns-query",
             "https://8.8.8.8/dns-query"
         ],
-        "fallback": [
-            "https://1.1.1.1/dns-query",
-            "https://8.8.8.8/dns-query",
-        ],
+        "fallback": DNS_ABROAD,
         "fallback-filter": {
             "geoip": False,
             "geoip-code": "CN",
-            "geosite": [
-                "gfw"
-            ],
             "ipcidr": [
                 "240.0.0.0/4"
             ]
