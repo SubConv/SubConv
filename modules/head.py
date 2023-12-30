@@ -23,6 +23,25 @@ DNS = {
             "https://223.5.5.5/dns-query",
             "https://1.12.12.12/dns-query",
             "https://8.8.8.8/dns-query"
+        ],
+        "fallback": [
+            "https://1.1.1.1/dns-query",
+            "https://8.8.8.8/dns-query",
+        ],
+        "fallback-filter": {
+            "geoip": False,
+            "geoip-code": "CN",
+            "geosite": [
+                "gfw"
+            ],
+            "ipcidr": [
+                "240.0.0.0/4"
+            ]
+        },
+        "fake-ip-filter": [
+            "+.lan",
+            "+.microsoft*.com",
+            "localhost.ptlogin2.qq.com"
         ]
     }
 }
