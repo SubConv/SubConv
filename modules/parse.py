@@ -5,7 +5,6 @@ This module is to get the list of regions available in orginal subscription
 
 import re
 import yaml
-from config import region_dict
 import modules.convert.converter as converter
 
 
