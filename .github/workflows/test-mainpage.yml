@@ -1,0 +1,44 @@
+name: Test static mainpage
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - mainpage/**
+      - .github/workflows/test-mainpage.yml
+  pull_request:
+    paths:
+      - mainpage/**
+      - .github/workflows/test-mainpage.yml
+
+env:
+  TZ: Asia/Shanghai
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.repository == 'SubConv/SubConv'
+    defaults:
+      run:
+        working-directory: mainpage
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.15.0
+          cache: npm
+          cache-dependency-path: mainpage/package-lock.json
+      - name: Install Dependencies
+        run: npm install --prefer-offline
+      - name: Build
+        run: npm run build
