@@ -6,7 +6,7 @@ from modules.convert import converter
 
 from fastapi import FastAPI, HTTPException
 from fastapi.requests import Request
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
@@ -59,6 +59,9 @@ async def sub(request: Request):
         interval = "1800"
 
     short = args.get("short")
+
+    # get proxyrule
+    notproxyrule = args.get("npr")
 
 
     # get the url of original subscription
@@ -132,9 +135,29 @@ async def sub(request: Request):
     # get the domain or ip of this api to add rule for this
     domain = re.search(r"([^:]+)(:\d{1,5})?", request.url.hostname).group(1)
     # generate the subscription
-    result = await pack.pack(url=url, urlstandalone=urlstandalone, urlstandby=urlstandby,urlstandbystandalone=urlstandbystandalone, content=content, interval=interval, domain=domain, short=short)
+    result = await pack.pack(url=url, urlstandalone=urlstandalone, urlstandby=urlstandby,urlstandbystandalone=urlstandbystandalone, content=content, interval=interval, domain=domain, short=short, notproxyrule=notproxyrule, base_url=request.base_url)
     return Response(content=result, headers=headers)
 
+# proxy
+@app.get("/proxy")
+async def proxy(url: str):
+    # file was big so use stream
+    async def stream():
+        async with httpx.AsyncClient() as client:
+            async with client.stream("GET", url, headers={'User-Agent':'clash'}) as resp:
+                yield resp.status_code
+                yield resp.headers
+                if resp.status_code < 200 or resp.status_code >= 300:
+                    yield await resp.aread()
+                    return
+                async for chunk in resp.aiter_bytes():
+                    yield chunk
+    streamResp = stream()
+    status_code = await streamResp.__anext__()
+    headers = await streamResp.__anext__()
+    if status_code < 200 or status_code >= 300:
+        raise HTTPException(status_code=status_code, detail=await streamResp.__anext__())
+    return StreamingResponse(streamResp, media_type=headers['Content-Type'])
 
 # static files
 @app.get("/{path:path}")
