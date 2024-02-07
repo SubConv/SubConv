@@ -44,15 +44,6 @@ ruleset = [
     ["🐟 漏网之鱼", "[]FINAL"]
 ]
 
-region_dict = {
-    "HK": [r"🇭🇰|HK|Hong|Kong|HGC|WTT|CMI|港", "🇭🇰 香港节点"],
-    "TW": [r"🇹🇼|TW|Taiwan|新北|彰化|CHT|台|HINET", "🇨🇳 台湾节点"],
-    "SG": [r"🇸🇬|SG|Singapore|狮城|^新[^节北]|[^刷更]新[^节北]", "🇸🇬 狮城节点"],
-    "JP": [r"🇯🇵|JP|Japan|Tokyo|Osaka|Saitama|东京|大阪|埼玉|日", "🇯🇵 日本节点"],
-    "KR": [r"🇰🇷|KO?R|Korea|首尔|韩|韓", "🇰🇷 韩国节点"],
-    "US": [r"🇺🇸|US|America|United.*?States|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥", "🇺🇸 美国节点"]
-}
-
 custom_proxy_group = [
     {
         "name": "♻️ 自动选择",
@@ -85,8 +76,10 @@ custom_proxy_group = [
         "name": "🔮 香港负载均衡",
         "type": "load-balance",
         "rule": False,
-        "region": ["HK"]
+        "regex": r"🇭🇰|HK|Hong|Kong|HGC|WTT|CMI|港"
     },
+
+    # Rule groups
     {
         "name": "🤖 ChatBot",
         "type": "select",
@@ -196,5 +189,43 @@ custom_proxy_group = [
         "name": "🐟 漏网之鱼",
         "type": "select",
         "prior": "PROXY"
+    },
+
+    # Region groups
+    {
+        "name": "🇭🇰 香港节点",
+        "type": "url-test",
+        "rule": False,
+        "regex": r"🇭🇰|HK|Hong|Kong|HGC|WTT|CMI|港"
+    },
+    {
+        "name": "🇨🇳 台湾节点",
+        "type": "url-test",
+        "rule": False,
+        "regex": r"🇹🇼|TW|Taiwan|新北|彰化|CHT|台|HINET"
+    },
+    {
+        "name": "🇸🇬 狮城节点",
+        "type": "url-test",
+        "rule": False,
+        "regex": r"🇸🇬|SG|Singapore|狮城|^新[^节北]|[^刷更]新[^节北]"
+    },
+    {
+        "name": "🇯🇵 日本节点",
+        "type": "url-test",
+        "rule": False,
+        "regex": r"🇯🇵|JP|Japan|Tokyo|Osaka|Saitama|东京|大阪|埼玉|日"
+    },
+    {
+        "name": "🇰🇷 韩国节点",
+        "type": "url-test",
+        "rule": False,
+        "regex": r"🇰🇷|KO?R|Korea|首尔|韩|韓"
+    },
+    {
+        "name": "🇺🇸 美国节点",
+        "type": "url-test",
+        "rule": False,
+        "regex": r"🇺🇸|US|America|United.*?States|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥"
     }
 ]

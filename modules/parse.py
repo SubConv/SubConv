@@ -28,33 +28,11 @@ async def parseSubs(content):
     return proxies
 
 # create a dict containg resions and corresponding proxy group
-async def mkList(content: list, urlstandalone: list):
-    result = []
-    total = {}
+async def mkListProxyNames(content: list):
     providerProxyNames = []
     if content:
         for u in content:
-            tmp = {}
             # preprocess the content
             contentTmp = re.findall(r"- name: (.+)", u)
             providerProxyNames.extend(contentTmp)
-            contentTmp = ",".join(contentTmp)
-
-            for i in region_dict:
-                if re.search(region_dict[i][0], contentTmp, re.I) is not None:
-                    tmp[i] = region_dict[i]
-                    total[i] = region_dict[i]
-            result.append(tmp)
-    if urlstandalone:
-        for u in urlstandalone:
-            tmp = {}
-            for i in region_dict:
-                if re.search(
-                    region_dict[i][0],
-                    u["name"],
-                    re.I
-                ) is not None:
-                    tmp[i] = region_dict[i]
-                    total[i] = region_dict[i]
-            result.append(tmp)
-    return result, total, providerProxyNames
+    return providerProxyNames

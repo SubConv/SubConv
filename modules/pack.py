@@ -12,14 +12,8 @@ import cache
 
 
 async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: list, content: str, interval, domain, short):
-    regionDict, total, providerProxyNames = await parse.mkList(content, urlstandalone)  # regions available and corresponding group name
+    providerProxyNames = await parse.mkListProxyNames(content)
     result = {}
-
-    # create a snippet containing region groups
-    regionGroups = []
-    for i in total.values():
-        regionGroups.append(i[1])
-    
 
     if short is None:
         # head of config
@@ -115,7 +109,6 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
     for group in config.custom_proxy_group:
         if group.get("rule") == False:
             proxySelect["proxies"].append(group["name"])
-    proxySelect["proxies"].extend(regionGroups)
     proxySelect["proxies"].append("DIRECT")
     proxyGroups["proxy-groups"].append(proxySelect)
 
@@ -139,7 +132,6 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
     # add proxy groups
     for group in config.custom_proxy_group:
         type = group["type"]
-        region = group.get("region")
         regex = group.get("regex")
 
         rule = group.get("rule")
@@ -156,7 +148,6 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                         "DIRECT",
                         "REJECT",
                         "🚀 节点选择",
-                        *regionGroups,
                         *[_group["name"] for _group in config.custom_proxy_group if _group.get("rule") == False]
                     ]
                 })
@@ -168,7 +159,6 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                         "REJECT",
                         "DIRECT",
                         "🚀 节点选择",
-                        *regionGroups,
                         *[_group["name"] for _group in config.custom_proxy_group if _group.get("rule") == False]
                     ]
                 })
@@ -178,7 +168,6 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                     "type": "select",
                     "proxies": [
                         "🚀 节点选择",
-                        *regionGroups,
                         *[_group["name"] for _group in config.custom_proxy_group if _group.get("rule") == False],
                         "DIRECT",
                         "REJECT"
@@ -192,14 +181,8 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                 "type": type
             }
             # add proxies
-            if regex is not None or region is not None:
-                if regex is not None:
-                    tmp = [regex]
-                else:
-                    tmp = []
-                    for i in region:
-                        if i in total:
-                            tmp.append(total[i][0])
+            if regex is not None:
+                tmp = [regex]
                 if len(tmp) > 0:
                     providerProxies = []
                     proxyGroupProxies = []
@@ -285,33 +268,6 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
             if proxyGroup is not None:
                 proxyGroups["proxy-groups"].append(proxyGroup)
 
-    # add region groups
-    for i in total:
-        urlTest = {
-            "name": total[i][1],
-            "type": "url-test",
-            "url": config.test_url,
-            "interval": 60,
-            "tolerance": 50,
-            "filter": total[i][0]
-        }
-        if subscriptions:
-            urlTest["use"] = subscriptions
-        if proxiesName:
-            urlTestProxies = []
-            for p in proxiesName:
-                if re.search(
-                    total[i][0],
-                    p,
-                    re.I
-                ) is not None:
-                    urlTestProxies.append(p)
-            if len(urlTestProxies) > 0:
-                urlTest["proxies"] = urlTestProxies
-            else:
-                urlTestProxies = None
-        proxyGroups["proxy-groups"].append(urlTest)
-
     # remove proxies that do not exist in any proxy group
     proxyGroupAndProxyList = (["DIRECT", "REJECT"])
     proxyGroupAndProxyList.extend([i["name"] for i in proxyGroups["proxy-groups"]])
@@ -320,9 +276,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
     for proxygroup in proxyGroups["proxy-groups"]:
         if "proxies" not in proxygroup:
             continue
-        for proxy in proxygroup["proxies"]:
-            if proxy not in proxyGroupAndProxyList:
-                proxygroup["proxies"].remove(proxy)
+        proxygroup["proxies"] = [proxy for proxy in proxygroup["proxies"] if proxy in proxyGroupAndProxyList]
 
     result.update(proxyGroups)
 
