@@ -20,6 +20,10 @@
       "dest": "/api.py"
     },
     {
+      "src": "/proxy(.*)",
+      "dest": "/api.py"
+    },
+    {
       "src": "/(.*)",
       "dest": "/static/$1"
     }
