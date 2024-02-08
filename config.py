@@ -1,8 +1,53 @@
+HEAD = {
+    "mixed-port": 7890,
+    "allow-lan": True,
+    "mode": "rule",
+    "log-level": "info",
+    "external-controller": ":9090",
+
+    "dns": {
+        "enable": True,
+        "listen": "0.0.0.0:1053",
+        "default-nameserver": [
+            "223.5.5.5",
+            "8.8.8.8",
+            "1.1.1.1"
+        ],
+        "nameserver-policy": {
+            "geosite:gfw,geolocation-!cn": [
+                "https://1.1.1.1/dns-query",
+                "https://1.0.0.1/dns-query",
+                "https://8.8.8.8/dns-query"
+            ]
+        },
+        "nameserver": [
+            "https://223.5.5.5/dns-query",
+            "https://1.12.12.12/dns-query",
+            "https://8.8.8.8/dns-query"
+        ],
+        "fallback": [
+            "https://1.1.1.1/dns-query",
+            "https://8.8.8.8/dns-query"
+        ],
+        "fallback-filter": {
+            "geoip": False,
+            "geoip-code": "CN",
+            "ipcidr": [
+                "240.0.0.0/4"
+            ]
+        },
+        "fake-ip-filter": [
+            "+.lan",
+            "+.microsoft*.com",
+            "localhost.ptlogin2.qq.com"
+        ]
+    }
+}
 
 # test_url = "https://www.apple.com/library/test/success.html"
-test_url = "https://www.gstatic.com/generate_204"
+TEST_URL = "https://www.gstatic.com/generate_204"
 
-ruleset = [
+RULESET = [
     ["🤖 ChatBot", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/OpenAi.list"],
     ["🤖 ChatBot", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/ChatBot.list"],
     ["🎯 全球直连", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/LocalAreaNetwork.list"],
@@ -44,7 +89,7 @@ ruleset = [
     ["🐟 漏网之鱼", "[]FINAL"]
 ]
 
-custom_proxy_group = [
+CULTOM_PROXY_GROUP = [
     {
         "name": "♻️ 自动选择",
         "type": "url-test",

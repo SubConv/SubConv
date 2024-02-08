@@ -38,7 +38,7 @@ def getRule(sort, url):
 # pack all rules
 def getFullRule():
     result = ""
-    for i in config.ruleset:
+    for i in config.RULESET:
         if i[1][:2] != "[]":
             result += getRule(i[0], i[1])
         else:

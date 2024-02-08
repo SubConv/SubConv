@@ -4,7 +4,6 @@ This module is to general a complete config for Clash
 
 
 from modules import parse
-from modules import head
 import re
 import config
 import yaml
@@ -18,10 +17,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
 
     if short is None:
         # head of config
-        result.update(head.HEAD)
-
-        # dns
-        result.update(head.DNS)
+        result.update(config.HEAD)
 
     # proxies
     proxies = {
@@ -70,7 +66,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                             "enable": True,
                             "interval": 60,
                             # "lazy": True,
-                            "url": config.test_url
+                            "url": config.TEST_URL
                         }
                     }
                 })
@@ -86,7 +82,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                             "enable": True,
                             "interval": 60,
                             # "lazy": True,
-                            "url": config.test_url
+                            "url": config.TEST_URL
                         }
                     }
                 })
@@ -106,7 +102,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
         "type": "select",
         "proxies": []
     }
-    for group in config.custom_proxy_group:
+    for group in config.CULTOM_PROXY_GROUP:
         if group.get("rule") == False:
             proxySelect["proxies"].append(group["name"])
     proxySelect["proxies"].append("DIRECT")
@@ -130,7 +126,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
 
 
     # add proxy groups
-    for group in config.custom_proxy_group:
+    for group in config.CULTOM_PROXY_GROUP:
         type = group["type"]
         regex = group.get("regex")
 
@@ -148,7 +144,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                         "DIRECT",
                         "REJECT",
                         "🚀 节点选择",
-                        *[_group["name"] for _group in config.custom_proxy_group if _group.get("rule") == False]
+                        *[_group["name"] for _group in config.CULTOM_PROXY_GROUP if _group.get("rule") == False]
                     ]
                 })
             elif prior == "REJECT":
@@ -159,7 +155,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                         "REJECT",
                         "DIRECT",
                         "🚀 节点选择",
-                        *[_group["name"] for _group in config.custom_proxy_group if _group.get("rule") == False]
+                        *[_group["name"] for _group in config.CULTOM_PROXY_GROUP if _group.get("rule") == False]
                     ]
                 })
             else:
@@ -168,7 +164,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                     "type": "select",
                     "proxies": [
                         "🚀 节点选择",
-                        *[_group["name"] for _group in config.custom_proxy_group if _group.get("rule") == False],
+                        *[_group["name"] for _group in config.CULTOM_PROXY_GROUP if _group.get("rule") == False],
                         "DIRECT",
                         "REJECT"
                     ]
@@ -243,15 +239,15 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                 if proxyGroup is not None:
                     if type == "load-balance":
                         proxyGroup["strategy"] = "consistent-hashing"
-                        proxyGroup["url"] = config.test_url
+                        proxyGroup["url"] = config.TEST_URL
                         proxyGroup["interval"] = 60
                         proxyGroup["tolerance"] = 50
                     elif type == "fallback":
-                        proxyGroup["url"] = config.test_url
+                        proxyGroup["url"] = config.TEST_URL
                         proxyGroup["interval"] = 60
                         proxyGroup["tolerance"] = 50
                     elif type == "url-test":
-                        proxyGroup["url"] = config.test_url
+                        proxyGroup["url"] = config.TEST_URL
                         proxyGroup["interval"] = 60
                         proxyGroup["tolerance"] = 50
             else:
@@ -292,7 +288,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
         "format": "text",
         "interval": 86400 * 7,
     }
-    for item in config.ruleset:
+    for item in config.RULESET:
         url = item[1]
         # use filename
         name = urlparse(url).path.split("/")[-1].split(".")[0]
