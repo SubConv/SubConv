@@ -89,7 +89,7 @@ RULESET = [
     ["🐟 漏网之鱼", "[]FINAL"]
 ]
 
-CULTOM_PROXY_GROUP = [
+CUSTOM_PROXY_GROUP = [
     {
         "name": "♻️ 自动选择",
         "type": "url-test",

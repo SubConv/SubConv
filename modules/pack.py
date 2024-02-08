@@ -102,7 +102,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
         "type": "select",
         "proxies": []
     }
-    for group in config.CULTOM_PROXY_GROUP:
+    for group in config.CUSTOM_PROXY_GROUP:
         if group.get("rule") == False:
             proxySelect["proxies"].append(group["name"])
     proxySelect["proxies"].append("DIRECT")
@@ -126,7 +126,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
 
 
     # add proxy groups
-    for group in config.CULTOM_PROXY_GROUP:
+    for group in config.CUSTOM_PROXY_GROUP:
         type = group["type"]
         regex = group.get("regex")
 
@@ -144,7 +144,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                         "DIRECT",
                         "REJECT",
                         "🚀 节点选择",
-                        *[_group["name"] for _group in config.CULTOM_PROXY_GROUP if _group.get("rule") == False]
+                        *[_group["name"] for _group in config.CUSTOM_PROXY_GROUP if _group.get("rule") == False]
                     ]
                 })
             elif prior == "REJECT":
@@ -155,7 +155,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                         "REJECT",
                         "DIRECT",
                         "🚀 节点选择",
-                        *[_group["name"] for _group in config.CULTOM_PROXY_GROUP if _group.get("rule") == False]
+                        *[_group["name"] for _group in config.CUSTOM_PROXY_GROUP if _group.get("rule") == False]
                     ]
                 })
             else:
@@ -164,7 +164,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                     "type": "select",
                     "proxies": [
                         "🚀 节点选择",
-                        *[_group["name"] for _group in config.CULTOM_PROXY_GROUP if _group.get("rule") == False],
+                        *[_group["name"] for _group in config.CUSTOM_PROXY_GROUP if _group.get("rule") == False],
                         "DIRECT",
                         "REJECT"
                     ]
