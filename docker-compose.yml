@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  subconv:
+    image: subconv
+    build: .
+    ports:
+      - "54321:443"

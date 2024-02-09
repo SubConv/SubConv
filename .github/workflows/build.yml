@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
+    paths:
+      - '.github/workflows/build.yml'
+      - 'modules/**'
+      - 'static/**'
+      - 'api.py'
+      - 'requirements.txt'
+
+jobs:
+  build:
+    if: github.repository == 'SubConv/SubConv'
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        arch: [x64]
+        include:
+          - os: macos-latest
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          architecture: ${{ matrix.arch }}
+          cache: 'pip'
+          cache-dependency-path: |
+            **/requirements*.txt
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Build Executable
+        uses: Nuitka/Nuitka-Action@main
+        with:
+          nuitka-version: main
+          script-name: api.py
+          onefile: true
+
+      - name: Copy Files
+        run: |
+          mkdir output
+          cp build/api${{ matrix.os == 'windows-latest' && '.exe' || '.bin' }} output/api${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+          cp -r static output/static
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: subconv-${{ matrix.os }}-${{ matrix.arch }}
+          path: output/
