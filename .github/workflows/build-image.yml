@@ -35,6 +35,18 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Cache Nuitka cache
+      uses: actions/cache@v4
+      with:
+        path: nuitka-cache
+        key: nuitka-cache
+
+    - name: Inject Nuitka cache into Docker
+      uses: reproducible-containers/buildkit-cache-dance@v2.1.4
+      with:
+        cache-source: nuitka-cache
+        cache-target: /root/.cache/Nuitka
+
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:

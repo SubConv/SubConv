@@ -6,14 +6,15 @@ WORKDIR /app
 COPY . .
 
 # Install dependencies
-RUN apk add --update-cache ca-certificates tzdata patchelf clang
+RUN apk add --update-cache ca-certificates tzdata patchelf clang ccache
 
 # Insall python and dependencies
 RUN pip3 install -r requirements.txt && \
     pip3 install nuitka
 
 # Use nuikta to compile the python code
-RUN python3 -m nuitka --clang --onefile --standalone api.py && \
+RUN --mount=type=cache,target=/root/.cache/Nuitka \
+    python3 -m nuitka --clang --onefile --standalone api.py && \
     chmod +x api.bin
 
 
