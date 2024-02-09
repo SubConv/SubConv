@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  setup:
+    if: github.repository == 'SubConv/SubConv'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.set_tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set tag
+        id: set_tag
+        run: |
+          echo "tag=$(echo ${GITHUB_REF#refs/tags/})" >> $GITHUB_OUTPUT
+
+  build:
+    needs: setup
+    uses: ./.github/workflows/build.yml
+
+  build-image:
+    needs: setup
+    uses: ./.github/workflows/build-image.yml
+    with:
+      tags: ghcr.io/subconv/subconv:${{ needs.setup.outputs.tag }},ghcr.io/subconv/subconv:latest
+
+  release:
+    if: github.repository == 'SubConv/SubConv'
+    needs: [build, build-image]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Display artifacts
+        run: ls -R
+
+      - name: zip for each platform
+        run: |
+          for dir in subconv-*; do
+            if [ -d "$dir" ]; then
+              echo "----- Zip $dir -----"
+              (cd $dir && zip -r9 "../$dir.zip" ./*)
+            fi
+          done
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            subconv-*.zip

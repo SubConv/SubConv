@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - build
+      - dev
     paths:
       - '.github/workflows/build-image.yml'
       - '.github/workflows/build-image-dev.yml'

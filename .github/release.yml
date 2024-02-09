@@ -1,0 +1,29 @@
+changelog:
+  categories:
+    - title: "Fixes"
+      labels:
+        - "bug"
+    - title: "Features"
+      labels:
+        - "enhancement"
+        - "feature"
+    - title: "Documentation"
+      labels:
+        - "documentation"
+    - title: "Improvements"
+      labels:
+        - "improvement"
+        - "performance"
+        - "refactor"
+    - title: "Breaking Changes"
+      labels:
+        - "breaking"
+        - "breaking change"
+        - "breaking changes"
+    - title: "Deprecations"
+      labels:
+        - "deprecation"
+        - "deprecate"
+    - title: "Security"
+      labels:
+        - "security"
