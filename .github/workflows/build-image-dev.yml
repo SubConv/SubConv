@@ -1,0 +1,26 @@
+name: Build and push dev Docker image
+
+on:
+  push:
+    branches:
+      - main
+      - build
+    paths:
+      - '.github/workflows/build-image.yml'
+      - '.github/workflows/build-image-dev.yml'
+      - 'Dockerfile'
+      - 'modules/**'
+      - 'static/**'
+      - 'api.py'
+      - 'requirements.txt'
+  workflow_dispatch:
+
+permissions:
+  packages: write
+
+jobs:
+  build-and-push:
+    if: github.repository == 'SubConv/SubConv'
+    uses: ./.github/workflows/build-image.yml
+    with:
+      tags: ghcr.io/subconv/subconv:dev

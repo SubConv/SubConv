@@ -6,3 +6,5 @@ services:
     build: .
     ports:
       - "54321:443"
+    volumes:
+      - ./config.yaml:/app/config.yaml
