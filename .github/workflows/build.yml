@@ -36,8 +36,7 @@ jobs:
           python-version: '3.11'
           architecture: ${{ matrix.arch }}
           cache: 'pip'
-          cache-dependency-path: |
-            **/requirements*.txt
+          cache-dependency-path: requirements.txt
 
       - name: Install Dependencies
         run: |
