@@ -1,4 +1,5 @@
 from typing import List, Tuple
+from pathlib import Path
 
 from pydantic import BaseModel
 from pydantic_settings_yaml import YamlBaseSettings
@@ -26,7 +27,12 @@ class Config(YamlBaseSettings):
         yaml_file="config.yaml"
     )
 
+
 try:
+    if Path("config.yaml").exists():
+        with open("config.yaml", "r", encoding="utf-8") as f:
+            if f.read() == "":
+                raise FileNotFoundError
     configInstance = Config()
 except FileNotFoundError:
     print("config.yaml not found, creating a default one")
