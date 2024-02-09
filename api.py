@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 # coding=utf-8
-from modules import pack
-from modules import parse
-from modules.convert import converter
 
 from fastapi import FastAPI, HTTPException
 from fastapi.requests import Request
@@ -17,6 +14,30 @@ import argparse
 from pathlib import Path
 import re
 
+"""
+main routine
+"""
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", "-P", type=int, default=443, help="port of the api, default: 443")
+    parser.add_argument("--host", "-H", type=str, default="0.0.0.0", help="host of the api, default: 0.0.0.0")
+    args = parser.parse_args()
+    print("host:", args.host)
+    print("port:", args.port)
+    # Debug
+    # uvicorn.run("api:app", host=args.host, port=args.port, reload=True)
+    # Production
+    module_name = __name__.split(".")[0]
+    uvicorn.run(module_name+":app", host=args.host, port=args.port, workers=4)
+
+
+"""
+FastAPI App
+"""
+from modules import pack
+from modules import parse
+from modules.convert import converter
+
 
 def length(sth):
     if sth is None:
@@ -24,9 +45,7 @@ def length(sth):
     else:
         return len(sth)
 
-
 app = FastAPI()
-
 
 # mainpage
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -166,16 +185,3 @@ async def index(path):
         return FileResponse("static/"+path)
     else:
         raise HTTPException(status_code=404, detail="Not Found")
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", "-P", type=int, default=443, help="port of the api, default: 443")
-    parser.add_argument("--host", "-H", type=str, default="0.0.0.0", help="host of the api, default: 0.0.0.0")
-    args = parser.parse_args()
-    print("host:", args.host)
-    print("port:", args.port)
-    # Debug
-    # uvicorn.run("api:app", host=args.host, port=args.port, reload=True)
-    # Production
-    module_name = __name__.split(".")[0]
-    uvicorn.run(module_name+":app", host=args.host, port=args.port, workers=4)
