@@ -24,6 +24,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print("host:", args.host)
     print("port:", args.port)
+
+    # init config
+    from modules import config
+
     # Debug
     # uvicorn.run("api:app", host=args.host, port=args.port, reload=True)
     # Production
