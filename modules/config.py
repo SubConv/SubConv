@@ -34,5 +34,7 @@ except FileNotFoundError:
         yaml.SafeDumper.ignore_aliases = lambda *args : True
         yaml.safe_dump(config_template.template, f, allow_unicode=True, sort_keys=False)
     configInstance = Config()
-    
     print("config.yaml created")
+except Exception as e:
+    print(f"Error: {e}")
+    exit(1)
