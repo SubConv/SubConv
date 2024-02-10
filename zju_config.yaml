@@ -16,6 +16,11 @@ HEAD:
       - https://1.1.1.1/dns-query
       - https://1.0.0.1/dns-query
       - https://8.8.8.8/dns-query
+      +.zju.edu.cn:
+      - 10.10.0.21
+      - https://1.1.1.1/dns-query
+      - https://1.0.0.1/dns-query
+      - https://8.8.8.8/dns-query
     nameserver:
     - https://223.5.5.5/dns-query
     - https://1.12.12.12/dns-query
@@ -35,6 +40,14 @@ HEAD:
     - localhost.ptlogin2.qq.com
 TEST_URL: https://www.gstatic.com/generate_204
 RULESET:
+- - 🛸 PT站
+  - https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/PrivateTracker.list
+- - ✔ ZJU-INTL
+  - https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/ZJU-INTL.list
+- - ✔ ZJU
+  - https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/ZJU.list
+- - 📃 ZJU More Scholar
+  - https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/ZJU-More-Scholar.list
 - - 🤖 ChatBot
   - https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/OpenAi.list
 - - 🤖 ChatBot
@@ -107,6 +120,8 @@ RULESET:
   - https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/ChinaCompanyIp.list
 - - 🎯 全球直连
   - https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Download.list
+- - ✔ ZJU
+  - https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/ZJU-IP.list
 - - 🎯 全球直连
   - '[]GEOIP,CN'
 - - 🐟 漏网之鱼
@@ -114,6 +129,7 @@ RULESET:
 CUSTOM_PROXY_GROUP:
 - name: ♻️ 自动选择
   type: url-test
+  regex: ^(?!.*(ZJU|浙大|内网|✉️)).*
   rule: false
 - name: 🚀 手动切换1
   type: select
@@ -125,14 +141,25 @@ CUSTOM_PROXY_GROUP:
   rule: false
 - name: 🔯 故障转移
   type: fallback
+  regex: ^(?!.*(ZJU|浙大|内网|✉️)).*
   rule: false
 - name: 🔮 负载均衡
   type: load-balance
+  regex: ^(?!.*(ZJU|浙大|内网|✉️)).*
   rule: false
 - name: 🔮 香港负载均衡
   type: load-balance
   rule: false
   regex: 🇭🇰|HK|Hong|Kong|HGC|WTT|CMI|港
+- name: ✔ ZJU-INTL
+  type: select
+  prior: DIRECT
+- name: ✔ ZJU
+  type: select
+  prior: DIRECT
+- name: 📃 ZJU More Scholar
+  type: select
+  prior: DIRECT
 - name: 🤖 ChatBot
   type: select
   prior: PROXY
@@ -184,6 +211,9 @@ CUSTOM_PROXY_GROUP:
 - name: 🎶 Spotify
   type: select
   prior: DIRECT
+- name: 🛸 PT站
+  type: select
+  prior: DIRECT
 - name: 🎯 全球直连
   type: select
   prior: DIRECT
@@ -199,6 +229,10 @@ CUSTOM_PROXY_GROUP:
 - name: 🐟 漏网之鱼
   type: select
   prior: PROXY
+- name: 🇨🇳 ZJU节点
+  type: select
+  rule: false
+  regex: ZJU|浙大
 - name: 🇭🇰 香港节点
   type: url-test
   rule: false
