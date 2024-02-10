@@ -17,9 +17,7 @@
 [docs](https://subconv.is-sb.com) (中英都有, 但是机翻)  
 
 ## 说明
-**若为原版内核需要v1.15.0或更新，否则会出现地区分组分类失败的情况**  
-~~本接口适用于一元机场的订阅转换（大概率不适用于别的机场）~~ 现理论上适配所有机场，由于使用了clash特性proxy-provider，Linux用户只需保存转换后的配置可实现自动更新节点(不需要自动更新的脚本，是clash核心本身支持的)<br>
-目前 hysteria, hysteria2, TUIC 的转换未经测试，遇到问题请提issue，并提供日志（Vercel可以看日志，VPS部署可以看输出的错误信息）  
+**Clash Core from Dreamacro** (原版Clash) 已经不再支持了，建议使用 [mihomo](https://github.com/MetaCubeX/mihomo)
 
 ## 食用方法
 自己根据 [文档](https://subconv.is-sb.com) 部署  

@@ -17,7 +17,7 @@ This project is a subscription converter aiming to transform subscriptions to Cl
 [docs](https://subconv.is-sb.com) (both Chinese and English, but machine translated)  
 
 ## P.S
-**If you're using the Clash Core from Dreamacro, you need v1.15.0 or newer, otherwise the region grouping will fail**  
+**Clash Core from Dreamacro** (original Clash core) is no longer supported. It's recommended to use [mihomo](https://github.com/MetaCubeX/mihomo) instead.
 
 ## Usage
 Deploy by yourself according to [docs](https://subconv.is-sb.com)  
