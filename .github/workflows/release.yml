@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  packages: write
+
 jobs:
   setup:
     if: github.repository == 'SubConv/SubConv'

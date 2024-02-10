@@ -12,6 +12,8 @@ on:
       - 'static/**'
       - 'api.py'
       - 'requirements.txt'
+  workflow_call:
+    
 
 jobs:
   build:
