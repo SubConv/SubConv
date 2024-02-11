@@ -1,0 +1,8 @@
+node_modules
+.DS_Store
+dist
+
+# lock files
+yarn.lock
+package-lock.json
+pnpm-lock.yaml

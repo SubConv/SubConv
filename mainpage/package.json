@@ -1,25 +1,15 @@
 {
-  "name": "sub_conv_demo",
-  "version": "0.1.0",
-  "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build"
+    "dev": "vite",
+    "build": "vite build"
   },
   "dependencies": {
-    "element-ui": "^2.15.14",
-    "vue": "^2.6.14",
-    "vue-router": "^3.5.1"
+    "element-plus": "^2.5.5",
+    "vue": "^3.4.18"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "~5.0.0",
-    "@vue/cli-plugin-router": "~5.0.0",
-    "@vue/cli-service": "~5.0.0",
-    "vue-template-compiler": "^2.7.16"
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.1.1"
   },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead"
-  ]
+  "license": "MPL-2.0"
 }

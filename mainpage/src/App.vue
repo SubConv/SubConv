@@ -66,61 +66,69 @@
     </div>
 </template>
 
-<script>
-export default {
-    data() {
-        return {
-            linkInput: '',
-            linkOutput: '',
-            time: '',
-            standby: '',
-            standby_switch: false,
-            proxy_switch: true
-        };
-    },
-    methods: {
-        submitForm() {
-            let result = window.location.protocol + "//" + window.location.host
-            if (this.linkInput !== "") {
-                result += "/sub?url=" + encodeURIComponent(this.linkInput);
-                if (this.time !== "") {
-                    if (/^[1-9][0-9]*$/.test(this.time)) {
-                        result += "&interval=" + this.time;
-                    }
-                    else {
-                        this.$message({
-                            message: '时间间隔必须为整数',
-                            type: 'error'
-                        });
-                        return false;
-                    }
-                }
-                if (this.standby_switch) {
-                    if (this.standby !== "") {
-                        result += "&urlstandby=" + encodeURIComponent(this.standby);
-                    }
-                }
-                if (!this.proxy_switch) {
-                    result += "&npr=1";
-                }
-            } else {
-                this.$message({
-                    message: '订阅链接不能为空',
+<script setup lang="ts">
+// init
+import { ref } from 'vue'
+import { ElButton, ElInput, ElForm, ElFormItem, ElCard, ElSwitch, ElMessage } from 'element-plus'
+import 'element-plus/es/components/button/style/css'
+import 'element-plus/es/components/input/style/css'
+import 'element-plus/es/components/form/style/css'
+import 'element-plus/es/components/form-item/style/css'
+import 'element-plus/es/components/card/style/css'
+import 'element-plus/es/components/switch/style/css'
+import 'element-plus/es/components/message/style/css'
+const linkInput = ref('')
+const linkOutput = ref('')
+const time = ref('')
+const standby = ref('')
+const standby_switch = ref(false)
+const proxy_switch = ref(true)
+
+// methods
+const submitForm = () => {
+    let result = window.location.protocol + "//" + window.location.host
+    if (linkInput.value !== "") {
+        result += "/sub?url=" + encodeURIComponent(linkInput.value);
+        if (time.value !== "") {
+            if (/^[1-9][0-9]*$/.test(time.value)) {
+                result += "&interval=" + time.value;
+            }
+            else {
+                ElMessage({
+                    message: '时间间隔必须为整数',
                     type: 'error'
                 });
+                linkOutput.value = ""
                 return false;
             }
-            this.linkOutput = result
-        },
-        copyForm() {
-            navigator.clipboard.writeText(this.linkOutput);
-            this.$message({
-                message: '复制成功',
-                type: 'success'
-            })
         }
+        if (standby_switch.value) {
+            if (standby.value !== "") {
+                result += "&urlstandby=" + encodeURIComponent(standby.value);
+            }
+        }
+        if (!proxy_switch.value) {
+            result += "&npr=1";
+        }
+    } else {
+        ElMessage({
+            message: '订阅链接不能为空',
+            type: 'error'
+        });
+        linkOutput.value = ""
+        return false;
     }
+    linkOutput.value = result
 }
+
+const copyForm = () => {
+    navigator.clipboard.writeText(linkOutput.value);
+    ElMessage({
+        message: '复制成功',
+        type: 'success'
+    })
+}
+
 </script>
 
 <style scoped>

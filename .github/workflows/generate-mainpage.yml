@@ -25,19 +25,17 @@ jobs:
       run:
         working-directory: mainpage
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: main
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18.15.0
-          cache: npm
-          cache-dependency-path: mainpage/package-lock.json
       - name: Install Dependencies
-        run: npm install --prefer-offline
+        run: yarn
       - name: Build
-        run: npm run build
+        run: yarn run build
       - name: move to static
         run: |
           pwd
