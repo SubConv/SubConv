@@ -44,8 +44,8 @@ jobs:
             rm -rf ../static/*
           fi
           mv dist/* ../static
-          git config --global user.name 'Git bot'
-          git config --global user.email 'bot@noreply.github.com'
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git add -A
           git commit -am "update static" && git push || echo "No changes to commit"
