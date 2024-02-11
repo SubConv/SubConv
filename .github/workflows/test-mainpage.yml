@@ -5,6 +5,7 @@ on:
   push:
     branches-ignore:
       - main
+      - dev
     paths:
       - mainpage/**
       - .github/workflows/test-mainpage.yml
@@ -16,11 +17,6 @@ on:
 env:
   TZ: Asia/Shanghai
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,16 +25,12 @@ jobs:
       run:
         working-directory: mainpage
     steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: main
+      - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18.15.0
-          cache: npm
-          cache-dependency-path: mainpage/package-lock.json
       - name: Install Dependencies
-        run: npm install --prefer-offline
+        run: yarn
       - name: Build
-        run: npm run build
+        run: yarn run build

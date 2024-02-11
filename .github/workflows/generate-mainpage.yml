@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - dev
     paths:
       - mainpage/**
       - .github/workflows/generate-mainpage.yml
@@ -26,8 +27,6 @@ jobs:
         working-directory: mainpage
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
