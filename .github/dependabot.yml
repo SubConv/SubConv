@@ -2,11 +2,13 @@ version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/mainpage"
+    target-branch: "dev"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
   - package-ecosystem: "pip"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
