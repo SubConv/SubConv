@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", "-P", type=int, default=443, help="port of the api, default: 443")
+    parser.add_argument("--port", "-P", type=int, default=8080, help="port of the api, default: 8080")
     parser.add_argument("--host", "-H", type=str, default="0.0.0.0", help="host of the api, default: 0.0.0.0")
     parser.add_argument("--version", "-V", action="version", version="version: v2.0.0")
     parser.add_argument("--generate-config", "-G", type=str, choices=("default", "zju"), action=GenerateConfigAction, help="generate a default config file")
@@ -152,6 +152,12 @@ async def sub(request: Request):
             resp = await client.head(url[0], headers={'User-Agent':'clash'})
             if resp.status_code < 200 or resp.status_code >= 400:
                 raise HTTPException(status_code=resp.status_code, detail=resp.text)
+            elif resp.status_code >= 300 and resp.status_code < 400:
+                while resp.status_code >= 300 and resp.status_code < 400:
+                    url = resp.headers['Location']
+                    resp = await client.head(url, headers={'User-Agent':'clash'})
+                    if resp.status_code < 200 or resp.status_code >= 400:
+                        raise HTTPException(status_code=resp.status_code, detail=resp.text)
             originalHeaders = resp.headers
             if 'subscription-userinfo' in originalHeaders:  # containing info about ramaining flow
                 headers['subscription-userinfo'] = originalHeaders['subscription-userinfo']
