@@ -28,6 +28,6 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY static /app/static
 COPY config.yaml /app/config.yaml
 
-EXPOSE 443
+EXPOSE 8080
 
 ENTRYPOINT ["/app/api.bin"]
