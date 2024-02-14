@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.1.0] - 2024-02-14
+
+## What's Changed
+### Breaking Changes
+* perf!: change default port by @wouiSB in https://github.com/SubConv/SubConv/pull/22
+### Fixes
+* fix: handle redirect by @wouiSB in https://github.com/SubConv/SubConv/pull/21
+* fix: fatal error in last fix by @wouiSB in https://github.com/SubConv/SubConv/pull/23
+### Improvements
+* perf!: change default port by @wouiSB in https://github.com/SubConv/SubConv/pull/22
+
 ## [v2.0.0] - 2024-02-10
 
 ### Features
