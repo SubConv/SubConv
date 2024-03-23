@@ -1,7 +1,8 @@
 # Subscription Converter
 [English](README.md) | Chinese  
 ![license](https://img.shields.io/github/license/SubConv/SubConv) ![last commit](https://img.shields.io/github/last-commit/SubConv/SubConv)  
-这个项目是面向所有Clash用户的订阅转换，如果你需要ZJU专版，请移步[SubConv 4 ZJU](https://github.com/SubConv/SubConv-4-ZJU)  
+~~这个项目是面向所有Clash用户的订阅转换，如果你需要ZJU专版，请移步[SubConv 4 ZJU](https://github.com/SubConv/SubConv-4-ZJU)~~  
+我们提供了一般用户的配置和ZJU专版的配置，可查看 [docs](https://subconv.is-sb.com) 了解如何使用对应的配置文件部署。  
 
 ## 功能
 - 支持Clash配置和V2ray格式的base64链接（即原始订阅不一定是Clash）  

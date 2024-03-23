@@ -1,7 +1,8 @@
 # Subscription Converter
 English | [Chinese](README_CN.md)  
 ![license](https://img.shields.io/github/license/SubConv/SubConv) ![last commit](https://img.shields.io/github/last-commit/SubConv/SubConv)  
-This project is a subscription converter aiming to transform subscriptions to Clash format. If you need a ZJU version, please go to [SubConv 4 ZJU](https://github.com/SubConv/SubConv-4-ZJU)  
+~~This project is a subscription converter aiming to transform subscriptions to Clash format. If you need a ZJU version, please go to [SubConv 4 ZJU](https://github.com/SubConv/SubConv-4-ZJU)~~  
+We provide configurations for general users and ZJU version, you can check [docs](https://subconv.is-sb.com) to learn how to deploy with the corresponding configuration file.  
 
 ## Features
 - Support Clash config and V2ray format base64 links (i.e. the original subscription does not have to be Clash)  
