@@ -26,9 +26,11 @@ if __name__ == "__main__":
         def __call__(self, parser, namespace, values, option_string=None):
             yaml.SafeDumper.ignore_aliases = lambda *args : True
             if values == "default":
-                print(yaml.safe_dump(config_template.template_default, allow_unicode=True, sort_keys=False))
+                with open("config.yaml", "w", encoding="utf-8") as f:
+                    f.write(yaml.safe_dump(config_template.template_default, allow_unicode=True, sort_keys=False))
             elif values == "zju":
-                print(yaml.safe_dump(config_template.template_zju, allow_unicode=True, sort_keys=False))
+                with open("config.yaml", "w", encoding="utf-8") as f:
+                    f.write(yaml.safe_dump(config_template.template_zju, allow_unicode=True, sort_keys=False))
             parser.exit()
 
     # parse arguments
