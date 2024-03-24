@@ -36,7 +36,7 @@ try:
     configInstance = Config("config.yaml")
 except FileNotFoundError:
     print(f"config.yaml not found or empty, please run {sys.argv[0]} -h to see how to generate a default config file")
-    exit(1)
+    sys.exit(1)
 except Exception as e:
     print(f"Error: {e}")
-    exit(1)
+    sys.exit(1)
