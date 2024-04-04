@@ -31,8 +31,9 @@ jobs:
   build-image:
     needs: setup
     uses: ./.github/workflows/build-image.yml
+    secrets: inherit
     with:
-      tags: ghcr.io/subconv/subconv:${{ needs.setup.outputs.tag }},ghcr.io/subconv/subconv:latest
+      tags: ${{ needs.setup.outputs.tag }},latest
 
   release:
     if: github.repository == 'SubConv/SubConv'
