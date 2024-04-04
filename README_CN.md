@@ -14,7 +14,7 @@
 ## 功能
 
 - 支持Clash配置和V2ray格式的base64链接（即原始订阅不一定是Clash）
-- 一个可以勉强能看的订阅转换 Web-UI (感谢 [@Musanico](https://github.com/musanico))
+- 自带Web-UI (感谢 [@Musanico](https://github.com/musanico))
 - 大体基于 ACL 的规则
 - 基于 proxy-provider 的节点自动更新
 - 基于 rule-provider 的规则自动更新
