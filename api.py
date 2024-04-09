@@ -15,6 +15,9 @@ from urllib.parse import urlencode, unquote
 import argparse
 from pathlib import Path
 import re
+import os
+
+DISALLOW_ROBOTS = bool(eval(os.environ.get("DISALLOW_ROBOTS", "False")))
 
 """
 main routine
@@ -49,6 +52,10 @@ if __name__ == "__main__":
     # Production
     print("host:", args.host)
     print("port:", args.port)
+    if DISALLOW_ROBOTS:
+        print("robots: Disallow")
+    else:
+        print("robots: Allow")
     module_name = __name__.split(".")[0]
     uvicorn.run(module_name+":app", host=args.host, port=args.port, workers=4)
 
@@ -75,6 +82,13 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def mainpage():
     return FileResponse("static/index.html")
 
+# /robots.txt
+@app.get("/robots.txt")
+async def robots():
+    if DISALLOW_ROBOTS:
+        return Response(content="User-agent: *\nDisallow: /", media_type="text/plain")
+    else:
+        return Response(status_code=404)
 
 # subscription to proxy-provider
 @app.get("/provider")
