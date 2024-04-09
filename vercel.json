@@ -12,6 +12,10 @@
   ],
   "routes": [
     {
+      "src": "/robots.txt(.*)",
+      "dest": "/api.py"
+    },
+    {
       "src": "/sub(.*)",
       "dest": "/api.py"
     },
