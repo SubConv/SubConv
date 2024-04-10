@@ -303,6 +303,7 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
         rule_providers["rule-providers"].update({
             name: {
                 **classical,
+                "path": "./rule/{}.txt".format(name),
                 "url": url
             }
         })
