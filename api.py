@@ -96,7 +96,7 @@ async def provider(request: Request):
     headers = {'Content-Type': 'text/yaml;charset=utf-8'}
     url = request.query_params.get("url")
     async with httpx.AsyncClient() as client:
-        resp = await client.get(url, headers={'User-Agent':'clash-verge'})
+        resp = await client.get(url, headers={'User-Agent':request.headers['User-Agent']})
         if resp.status_code < 200 or resp.status_code >= 400:
             raise HTTPException(status_code=resp.status_code, detail=resp.text)
         result = await parse.parseSubs(resp.text)
@@ -165,13 +165,13 @@ async def sub(request: Request):
         headers = {'Content-Type': 'text/yaml;charset=utf-8'}
         # if there's only one subscription, return userinfo
         if length(url) == 1:
-            resp = await client.head(url[0], headers={'User-Agent':'clash-verge'})
+            resp = await client.head(url[0], headers={'User-Agent':request.headers['User-Agent']})
             if resp.status_code < 200 or resp.status_code >= 400:
                 raise HTTPException(status_code=resp.status_code, detail=resp.text)
             elif resp.status_code >= 300 and resp.status_code < 400:
                 while resp.status_code >= 300 and resp.status_code < 400:
                     url[0] = resp.headers['Location']
-                    resp = await client.head(url[0], headers={'User-Agent':'clash-verge'})
+                    resp = await client.head(url[0], headers={'User-Agent':request.headers['User-Agent']})
                     if resp.status_code < 200 or resp.status_code >= 400:
                         raise HTTPException(status_code=resp.status_code, detail=resp.text)
             originalHeaders = resp.headers
@@ -184,7 +184,7 @@ async def sub(request: Request):
         if url is not None:
             for i in range(len(url)):
                 # the test of response
-                respText = (await client.get(url[i], headers={'User-Agent':'clash-verge'})).text
+                respText = (await client.get(url[i], headers={'User-Agent':request.headers['User-Agent']})).text
                 content.append(await parse.parseSubs(respText))
                 url[i] = "{}provider?{}".format(request.base_url, urlencode({"url": url[i]}))
     if len(content) == 0:
@@ -205,7 +205,7 @@ async def proxy(url: str):
     # file was big so use stream
     async def stream():
         async with httpx.AsyncClient() as client:
-            async with client.stream("GET", url, headers={'User-Agent':'clash-verge'}) as resp:
+            async with client.stream("GET", url, headers={'User-Agent':request.headers['User-Agent']}) as resp:
                 yield resp.status_code
                 yield resp.headers
                 if resp.status_code < 200 or resp.status_code >= 400:
