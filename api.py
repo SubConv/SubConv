@@ -201,7 +201,7 @@ async def sub(request: Request):
 
 # proxy
 @app.get("/proxy")
-async def proxy(url: str):
+async def proxy(request: Request, url: str):
     # file was big so use stream
     async def stream():
         async with httpx.AsyncClient() as client:
