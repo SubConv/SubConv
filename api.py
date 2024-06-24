@@ -3,7 +3,7 @@
 
 from fastapi import FastAPI, HTTPException
 from fastapi.requests import Request
-from fastapi.responses import FileResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
@@ -11,7 +11,7 @@ import httpx
 
 import yaml
 
-from urllib.parse import urlencode, unquote
+from urllib.parse import urlencode, unquote, urlparse
 import argparse
 from pathlib import Path
 import re
@@ -75,6 +75,36 @@ def length(sth):
         return len(sth)
 
 app = FastAPI()
+async def fetch_url(url: str, request: Request, method: str):
+    headers = {"Content-Type": "text/yaml;charset=utf-8"}
+    redirect_count = 0
+    max_redirects = 5
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.request(
+            method, url, headers={"User-Agent": request.headers["User-Agent"]}
+        )
+        if resp.status_code < 200 or resp.status_code >= 400:
+            raise HTTPException(status_code=resp.status_code, detail=resp.text)
+        elif resp.status_code >= 300 and resp.status_code < 400:
+            while resp.status_code >= 300 and resp.status_code < 400:
+                if redirect_count >= max_redirects:
+                    raise HTTPException(status_code=500, detail="Too many redirects")
+                url = resp.headers['Location']
+                resp = await client.request(
+                    method, url, headers={"User-Agent": request.headers["User-Agent"]}
+                )
+                redirect_count += 1
+                if resp.status_code < 200 or resp.status_code >= 400:
+                    raise HTTPException(status_code=resp.status_code, detail=resp.text)
+        original_headers = resp.headers
+        if "subscription-userinfo" in original_headers:
+            headers["subscription-userinfo"] = original_headers["subscription-userinfo"]
+        if "Content-Disposition" in original_headers:
+            headers["Content-Disposition"] = original_headers[
+                "Content-Disposition"
+            ].replace("attachment", "inline")
+    return resp, headers
 
 # mainpage
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -93,26 +123,26 @@ async def robots():
 # subscription to proxy-provider
 @app.get("/provider")
 async def provider(request: Request):
-    headers = {'Content-Type': 'text/yaml;charset=utf-8'}
     url = request.query_params.get("url")
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url, headers={'User-Agent':request.headers['User-Agent']})
-        if resp.status_code < 200 or resp.status_code >= 400:
-            raise HTTPException(status_code=resp.status_code, detail=resp.text)
-        result = await parse.parseSubs(resp.text)
+    resp, headers = await fetch_url(url, request, method="GET")
+    result = await parse.parseSubs(resp.text)
     return Response(content=result, headers=headers)
 
-    
+
+# subscription to proxy-provider
+@app.head("/provider")
+async def provider_head(request: Request):
+    url = request.query_params.get("url")
+    _, headers = await fetch_url(url, request, method="HEAD")
+    return Response(content=None, headers=headers)
+
+
 # subscription converter api
 @app.get("/sub")
 async def sub(request: Request):
     args = request.query_params
     # get interval
-    if "interval" in args:
-        interval = args["interval"]
-    else:
-        interval = "1800"
-
+    interval = args.get("interval", "1800")
     short = args.get("short")
 
     # get proxyrule
@@ -154,39 +184,21 @@ async def sub(request: Request):
             urlstandby = None
         if len(urlstandbystandalone) == 0:
             urlstandbystandalone = None
-        
+
     if urlstandalone:
         urlstandalone = await converter.ConvertsV2Ray(urlstandalone)
     if urlstandbystandalone:
         urlstandbystandalone = await converter.ConvertsV2Ray(urlstandbystandalone)
 
-    async with httpx.AsyncClient() as client:
-        # get original headers
-        headers = {'Content-Type': 'text/yaml;charset=utf-8'}
-        # if there's only one subscription, return userinfo
-        if length(url) == 1:
-            resp = await client.head(url[0], headers={'User-Agent':request.headers['User-Agent']})
-            if resp.status_code < 200 or resp.status_code >= 400:
-                raise HTTPException(status_code=resp.status_code, detail=resp.text)
-            elif resp.status_code >= 300 and resp.status_code < 400:
-                while resp.status_code >= 300 and resp.status_code < 400:
-                    url[0] = resp.headers['Location']
-                    resp = await client.head(url[0], headers={'User-Agent':request.headers['User-Agent']})
-                    if resp.status_code < 200 or resp.status_code >= 400:
-                        raise HTTPException(status_code=resp.status_code, detail=resp.text)
-            originalHeaders = resp.headers
-            if 'subscription-userinfo' in originalHeaders:  # containing info about ramaining flow
-                headers['subscription-userinfo'] = originalHeaders['subscription-userinfo']
-            if 'Content-Disposition' in originalHeaders:  # containing filename
-                headers['Content-Disposition'] = originalHeaders['Content-Disposition'].replace("attachment", "inline")
+    if url is not None and len(url) == 1:
+        resp, headers = await fetch_url(url[0], request, method="HEAD")
 
-        content = []  # the proxies of original subscriptions
-        if url is not None:
-            for i in range(len(url)):
-                # the test of response
-                respText = (await client.get(url[i], headers={'User-Agent':request.headers['User-Agent']})).text
-                content.append(await parse.parseSubs(respText))
-                url[i] = "{}provider?{}".format(request.base_url, urlencode({"url": url[i]}))
+    content = []  # the proxies of original subscriptions
+    if url is not None:
+        for i in range(len(url)):
+            resp, _ = await fetch_url(url[i], request, method="GET")
+            content.append(await parse.parseSubs(resp.text))
+            url[i] = "{}provider?{}".format(request.base_url, urlencode({"url": url[i]}))
     if len(content) == 0:
         content = None
     if urlstandby:
@@ -199,9 +211,29 @@ async def sub(request: Request):
     result = await pack.pack(url=url, urlstandalone=urlstandalone, urlstandby=urlstandby,urlstandbystandalone=urlstandbystandalone, content=content, interval=interval, domain=domain, short=short, notproxyrule=notproxyrule, base_url=request.base_url)
     return Response(content=result, headers=headers)
 
+@app.head("/sub")
+async def get_remote_headers(request: Request):
+    args = request.query_params
+    url = args.get("url")
+    if url:
+        url = re.split(r"[|\n]", url)
+        tmp = list(filter(lambda x: x != "", url))
+        url = [i for i in tmp if i.startswith("http://") or i.startswith("https://")]
+    if not url:
+        raise HTTPException(
+            status_code=400, detail="URL is required and should be valid"
+        )
+    if len(url) == 1:
+        _, headers = await fetch_url(url[0], request, method="HEAD")
+    return Response(content=None, headers=headers)
+
+
 # proxy
 @app.get("/proxy")
 async def proxy(request: Request, url: str):
+    parsed_url = urlparse(url)
+    if parsed_url.netloc != "raw.githubusercontent.com":
+        return PlainTextResponse("Forbidden", status_code=403)
     # file was big so use stream
     async def stream():
         async with httpx.AsyncClient() as client:
