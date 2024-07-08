@@ -174,7 +174,7 @@ async def ConvertsV2Ray(buf):
             trojan["password"] = urlTrojan.password
             trojan["udp"] = True
             trojan["skip-cert-verify"] = bool(
-                distutils.util.strtobool(query.get("allowInsecure")))
+                distutils.util.strtobool(query.get("allowInsecure", "False")))
 
             sni = get(query.get("sni"))
             if sni != "":
