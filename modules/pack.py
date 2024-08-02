@@ -107,8 +107,9 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
         if group.rule == False:
             proxySelect["proxies"].append(group.name)
     proxySelect["proxies"].append("DIRECT")
-    proxyGroups["proxy-groups"].append(proxySelect)
 
+    if len(config.configInstance.CUSTOM_PROXY_GROUP) > 0:
+        proxyGroups["proxy-groups"].append(proxySelect)
     
 
     # generate subscriptions and standby subscriptions list
