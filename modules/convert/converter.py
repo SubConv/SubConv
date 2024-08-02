@@ -321,13 +321,11 @@ async def ConvertsV2Ray(buf):
                 vmess["http-opts"] = httpOpts
 
             elif network == "h2":
-                headers = {}
                 h2Opts = {}
                 host = get(values.get("host"))
                 if host != "":
-                    headers["Host"] = host
+                    h2Opts["host"] = [host]
                 h2Opts["path"] = get(values.get("path"))
-                h2Opts["headers"] = headers
 
                 vmess["h2-opts"] = h2Opts
 

@@ -75,7 +75,6 @@ def handleVShareLink(names: dict, url: urlparse.ParseResult, scheme: str, proxy:
             proxy["http-opts"] = httpOpts
 
     elif network == "http":
-        headers = {}
         h2Opts = {}
         h2Opts["path"] = "/"
         path = get(query.get("path"))
@@ -83,8 +82,7 @@ def handleVShareLink(names: dict, url: urlparse.ParseResult, scheme: str, proxy:
             h2Opts["path"] = str(path)
         host = get(query.get("host"))
         if host != "":
-            h2Opts["host"] = str(host)
-        h2Opts["headers"] = headers
+            h2Opts["host"] = [str(host)]
         proxy["h2-opts"] = h2Opts
     
     elif network == "ws":
