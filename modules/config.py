@@ -19,8 +19,8 @@ class Group(BaseModel):
 class Config(YamlBaseSettings):
     HEAD: dict
     TEST_URL: str = "http://www.gstatic.com/generate_204"
-    RULESET: List[Tuple[str, str]]
-    CUSTOM_PROXY_GROUP: List[Group]
+    RULESET: List[Tuple[str, str]] = []
+    CUSTOM_PROXY_GROUP: List[Group] = []
 
     model_config = SettingsConfigDict(
         secrets_dir=".",

@@ -17,7 +17,7 @@ import distutils.util
 async def ConvertsV2Ray(buf):
 
     try:
-        data = base64.b64decode(buf).decode("utf-8")
+        data = base64RawStdDecode(buf)
     except:
         try:
             data = buf.decode("utf-8")
@@ -232,7 +232,7 @@ async def ConvertsV2Ray(buf):
 
         elif scheme == "vmess":
             try:
-                dcBuf = base64.b64decode(body)
+                dcBuf = base64RawStdDecode(body)
             except:
                 # Xray VMessAEAD share link
                 try:
@@ -321,13 +321,11 @@ async def ConvertsV2Ray(buf):
                 vmess["http-opts"] = httpOpts
 
             elif network == "h2":
-                headers = {}
                 h2Opts = {}
                 host = get(values.get("host"))
                 if host != "":
-                    headers["Host"] = host
+                    h2Opts["host"] = [host]
                 h2Opts["path"] = get(values.get("path"))
-                h2Opts["headers"] = headers
 
                 vmess["h2-opts"] = h2Opts
 
