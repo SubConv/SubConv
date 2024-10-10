@@ -1,5 +1,5 @@
 fastapi==0.111.0
 httpx==0.27.0
 PyYAML==6.0.1
-uvicorn==0.30.1
+uvicorn==0.31.1
 pydantic-settings-yaml==0.2.0
