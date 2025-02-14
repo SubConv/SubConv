@@ -171,7 +171,7 @@ async def ConvertsV2Ray(buf):
             trojan["type"] = scheme
             trojan["server"] = urlTrojan.hostname
             trojan["port"] = urlTrojan.port
-            trojan["password"] = urlTrojan.password
+            trojan["password"] = urlTrojan.username
             trojan["udp"] = True
             trojan["skip-cert-verify"] = bool(
                 distutils.util.strtobool(query.get("allowInsecure")))

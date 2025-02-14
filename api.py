@@ -165,13 +165,13 @@ async def sub(request: Request):
         headers = {'Content-Type': 'text/yaml;charset=utf-8'}
         # if there's only one subscription, return userinfo
         if length(url) == 1:
-            resp = await client.head(url[0], headers={'User-Agent': 'v2rayn'})
+            resp = await client.head(url[0], headers={'User-Agent': request.headers['User-Agent']})
             if resp.status_code < 200 or resp.status_code >= 400:
                 raise HTTPException(status_code=resp.status_code, detail=resp.text)
             elif resp.status_code >= 300 and resp.status_code < 400:
                 while resp.status_code >= 300 and resp.status_code < 400:
                     url[0] = resp.headers['Location']
-                    resp = await client.head(url[0], headers={'User-Agent': 'v2rayn'})
+                    resp = await client.head(url[0], headers={'User-Agent': request.headers['User-Agent']})
                     if resp.status_code < 200 or resp.status_code >= 400:
                         raise HTTPException(status_code=resp.status_code, detail=resp.text)
             originalHeaders = resp.headers
