@@ -49,7 +49,7 @@ jobs:
         with:
           nuitka-version: main
           script-name: api.py
-          onefile: true
+          mode: onefile
 
       - name: Copy Files
         run: |
