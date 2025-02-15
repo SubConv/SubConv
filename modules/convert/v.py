@@ -5,7 +5,7 @@ from modules.convert.util import get, RandUserAgent
 
 def handleVShareLink(names: dict, url: urlparse.ParseResult, scheme: str, proxy: dict):
     query = dict(urlparse.parse_qsl(url.query))
-    proxy["name"] = uniqueName(names, urlparse.unquote(url.fragment))
+    proxy["name"] = uniqueName(names, urlparse.unquote_plus(url.fragment))
     if url.hostname == "":
         raise
     if url.port == "":

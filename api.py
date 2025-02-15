@@ -11,7 +11,7 @@ import httpx
 
 import yaml
 
-from urllib.parse import urlencode, unquote
+from urllib.parse import urlencode
 import argparse
 from pathlib import Path
 import re
