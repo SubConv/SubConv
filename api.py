@@ -66,6 +66,7 @@ FastAPI App
 from modules import pack
 from modules import parse
 from modules.convert import converter
+from modules import config
 
 
 def length(sth):
@@ -202,6 +203,14 @@ async def sub(request: Request):
 # proxy
 @app.get("/proxy")
 async def proxy(request: Request, url: str):
+    # check if url is in whitelist
+    is_whitelisted = False
+    for rule in config.configInstance.RULESET:
+        if rule[1] == url:
+            is_whitelisted = True
+            break
+    if not is_whitelisted:
+        raise HTTPException(status_code=403, detail="Forbidden: URL not in whitelist")
     # file was big so use stream
     async def stream():
         async with httpx.AsyncClient() as client:
