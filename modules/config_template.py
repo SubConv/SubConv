@@ -14,22 +14,25 @@ template_default = {
                 "8.8.8.8",
                 "1.1.1.1"
             ],
+            "proxy-server-nameserver": [
+                "https://dns.alidns.com/dns-query"
+            ],
             "nameserver-policy": {
                 "geosite:gfw,geolocation-!cn": [
-                    "https://1.1.1.1/dns-query",
-                    "https://1.0.0.1/dns-query",
-                    "https://8.8.8.8/dns-query"
+                    "https://1.1.1.1/dns-query#🚀 节点选择",
+                    "https://1.0.0.1/dns-query#🚀 节点选择",
+                    "https://8.8.8.8/dns-query#🚀 节点选择"
                 ]
             },
             "nameserver": [
-                "https://223.5.5.5/dns-query",
-                "https://1.12.12.12/dns-query",
-                "https://8.8.8.8/dns-query"
+                "https://dns.alidns.com/dns-query",
+                "https://doh.pub/dns-query",
+                "https://8.8.8.8/dns-query#🚀 节点选择"
             ],
             "fallback": [
-                "https://1.1.1.1/dns-query",
-                "https://1.0.0.1/dns-query",
-                "https://8.8.8.8/dns-query"
+                "https://1.1.1.1/dns-query#🚀 节点选择",
+                "https://1.0.0.1/dns-query#🚀 节点选择",
+                "https://8.8.8.8/dns-query#🚀 节点选择"
             ],
             "fallback-filter": {
                 "geoip": False,
@@ -50,8 +53,6 @@ template_default = {
     "TEST_URL": "https://www.gstatic.com/generate_204",
 
     "RULESET": [
-        ["🤖 ChatBot", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/OpenAi.list"],
-        ["🤖 ChatBot", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/ChatBot.list"],
         ["🎯 全球直连", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/LocalAreaNetwork.list"],
         ["🎯 全球直连", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/UnBan.list"],
         ["🛑 广告拦截", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/BanAD.list"],
@@ -68,6 +69,8 @@ template_default = {
         ["Ⓜ️ 微软服务", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Microsoft.list"],
         ["🍎 苹果服务", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Apple.list"],
         ["📲 电报消息", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Telegram.list"],
+        ["💬 Ai平台", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/AI.list"],
+        ["💬 Ai平台", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/OpenAi.list"],
         ["🎶 网易音乐", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/NetEaseMusic.list"],
         ["🎶 Spotify", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/Spotify.list"],
         ["🎮 游戏平台", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/Epic.list"],
@@ -128,12 +131,12 @@ template_default = {
 
         # Rule groups
         {
-            "name": "🤖 ChatBot",
+            "name": "📲 电报消息",
             "type": "select",
             "prior": "PROXY"
         },
         {
-            "name": "📲 电报消息",
+            "name": "💬 Ai平台",
             "type": "select",
             "prior": "PROXY"
         },
@@ -294,28 +297,31 @@ template_zju = {
                 "8.8.8.8",
                 "1.1.1.1"
             ],
+            "proxy-server-nameserver": [
+                "https://dns.alidns.com/dns-query"
+            ],
             "nameserver-policy": {
                 "geosite:gfw,geolocation-!cn": [
-                    "https://1.1.1.1/dns-query",
-                    "https://1.0.0.1/dns-query",
-                    "https://8.8.8.8/dns-query"
+                    "https://1.1.1.1/dns-query#🚀 节点选择",
+                    "https://1.0.0.1/dns-query#🚀 节点选择",
+                    "https://8.8.8.8/dns-query#🚀 节点选择"
                 ],
                 "+.zju.edu.cn": [
                     "10.10.0.21",
-                    "https://1.1.1.1/dns-query",
-                    "https://1.0.0.1/dns-query",
-                    "https://8.8.8.8/dns-query"
+                    "https://1.1.1.1/dns-query#🚀 节点选择",
+                    "https://1.0.0.1/dns-query#🚀 节点选择",
+                    "https://8.8.8.8/dns-query#🚀 节点选择"
                 ]
             },
             "nameserver": [
-                "https://223.5.5.5/dns-query",
-                "https://1.12.12.12/dns-query",
-                "https://8.8.8.8/dns-query"
+                "https://dns.alidns.com/dns-query",
+                "https://doh.pub/dns-query",
+                "https://8.8.8.8/dns-query#🚀 节点选择"
             ],
             "fallback": [
-                "https://1.1.1.1/dns-query",
-                "https://1.0.0.1/dns-query",
-                "https://8.8.8.8/dns-query"
+                "https://1.1.1.1/dns-query#🚀 节点选择",
+                "https://1.0.0.1/dns-query#🚀 节点选择",
+                "https://8.8.8.8/dns-query#🚀 节点选择"
             ],
             "fallback-filter": {
                 "geoip": False,
@@ -340,8 +346,8 @@ template_zju = {
         ["✔ ZJU-INTL", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/ZJU-INTL.list"],
         ["✔ ZJU", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/ZJU.list"],
         ["📃 ZJU More Scholar", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/ZJU-More-Scholar.list"],
-        ["🤖 ChatBot", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/OpenAi.list"],
-        ["🤖 ChatBot", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/ChatBot.list"],
+        ["💬 Ai平台", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/AI.list"],
+        ["💬 Ai平台", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/Ruleset/OpenAi.list"],
         ["🎯 全球直连", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/LocalAreaNetwork.list"],
         ["🎯 全球直连", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/UnBan.list"],
         ["🛑 广告拦截", "https://raw.githubusercontent.com/SubConv/ZJU-Rule/main/Clash/BanAD.list"],
@@ -437,7 +443,7 @@ template_zju = {
             "prior": "DIRECT"
         },
         {
-            "name": "🤖 ChatBot",
+            "name": "💬 Ai平台",
             "type": "select",
             "prior": "PROXY"
         },
