@@ -57,7 +57,7 @@ if __name__ == "__main__":
     else:
         print("robots: Allow")
     module_name = __name__.split(".")[0]
-    uvicorn.run(module_name+":app", host=args.host, port=args.port, workers=4)
+    uvicorn.run(module_name+":app", host=args.host, port=args.port, workers=4, proxy_headers=True, forwarded_allow_ips="*")
 
 
 """
