@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.6",
-    "vite": "^8.0.8"
+    "vite": "^8.0.9"
   },
   "license": "MPL-2.0"
 }
