@@ -114,6 +114,12 @@ RULESET:
 - - 🐟 漏网之鱼
   - '[]FINAL'
 CUSTOM_PROXY_GROUP:
+# ==================== 全局节点过滤（新增） ====================
+- name: 🚀 节点选择
+  type: select
+  filter: "vless|trojan|ss|SS"                    # 只保留主流协议
+  exclude-filter: "(?i)vision|xtls-rprx|reality|商宽|住宅|early-data|max-early-data|anytls|AnyTLS|ANYTLS|any-tls|Any-TLS|type: anytls"
+  # exclude-type 不一定支持，可用上面 exclude-filter 替代
 - name: ♻️ 自动选择
   type: url-test
   rule: false
