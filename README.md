@@ -18,6 +18,7 @@ We ship two built-in templates in the root `template/` directory: `zju.yaml` and
 - A Web-UI (thanks to [@Musanico](https://github.com/musanico))
 - Rules based on ACL
 - Nodes auto update based on proxy-provider
+- Support forcing selected proxy-providers to update through `DIRECT`
 - Rules auto update based on rule-provider
 - Support proxy rule-provider to prevent failure to get rules from GitHub
 - Support multiple airports

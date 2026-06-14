@@ -17,6 +17,7 @@
 - 自带Web-UI (感谢 [@Musanico](https://github.com/musanico))
 - 大体基于 ACL 的规则
 - 基于 proxy-provider 的节点自动更新
+- 支持为指定 proxy-provider 强制使用 `DIRECT` 更新
 - 基于 rule-provider 的规则自动更新
 - 支持代理 rule-provider 防止无法从 GitHub 获取规则集
 - 多机场用户提供了支持

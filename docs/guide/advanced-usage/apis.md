@@ -9,6 +9,7 @@ It accepts GET requests. Here're the parameters:
 | Parameter | Description | Optional | Default | Remarks |
 | --- | --- | --- | --- | --- |
 | url | The URL of the original subscription or node sharing link. **It needs to be URIComponent encoded.** | No | - | Multiple subscription links are supported. You can use line breaks or "\|" to separate them. `https://t.me/...` links are treated as standalone share links (parsed as V2Ray nodes), not as remote subscription URLs. |
+| urldirect | Original subscription URLs that should be updated through `DIRECT`. **It needs to be URIComponent encoded.** | Yes | - | Multiple links are supported with line breaks or "\|". Only remote `http`/`https` subscription URLs are matched; standalone share links are ignored. Matching proxy-providers are generated with `proxy: DIRECT`. |
 | template | Template ID used to render the final config. | Yes | zju | Built-in values are `zju` and `general`. When omitted, `zju` is used. |
 | interval | The interval of proxy update. | Yes | 1800 | Unit: seconds. |
 | urlstandby | The URL of the standby subscription or node sharing link. The proxies in it will only be added to the **manual switch group** (the group whose `"manual"` is `True` in the configuration file), and will not be classified into region groups. **It's recommended to be URIComponent encoded.** | Yes | - | Multiple subscription links are supported. You can use line breaks or "|" to separate them. |
