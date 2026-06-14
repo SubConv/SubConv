@@ -82,7 +82,9 @@ async def sub(request: Request):
             status_code=400, detail="Missing required query parameter: url"
         )
 
-    url, urlstandalone_raw = _split_sources(url_param)
+    remote_urls, urlstandalone_raw = _split_sources(url_param)
+    direct_remote_urls = _split_direct_remote_urls(args.get("urldirect"))
+    url: list[packer.RemoteSubscription] | None = None
 
     urlstandby_param = args.get("urlstandby")
     urlstandby: list[str] | None = None
@@ -104,11 +106,12 @@ async def sub(request: Request):
     async with httpx.AsyncClient(follow_redirects=True) as client:
         headers = {"Content-Type": "text/yaml;charset=utf-8"}
         content: list[str] | None = []
-        if url is not None:
-            for i in range(len(url)):
-                resp = await _fetch_remote_response(client, url[i], user_agent)
+        if remote_urls is not None:
+            provider_urls: list[packer.RemoteSubscription] = []
+            for i, remote_url in enumerate(remote_urls):
+                resp = await _fetch_remote_response(client, remote_url, user_agent)
                 content.append(await subscription.parseSubs(resp.text))
-                if len(url) == 1:
+                if len(remote_urls) == 1:
                     original_headers = resp.headers
                     if "subscription-userinfo" in original_headers:
                         headers["subscription-userinfo"] = original_headers[
@@ -118,9 +121,15 @@ async def sub(request: Request):
                         headers["Content-Disposition"] = original_headers[
                             "Content-Disposition"
                         ].replace("attachment", "inline")
-                url[i] = "{}provider?{}".format(
-                    str(request.base_url), urlencode({"url": url[i]})
+                provider_urls.append(
+                    packer.RemoteSubscription(
+                        url="{}provider?{}".format(
+                            str(request.base_url), urlencode({"url": remote_url})
+                        ),
+                        force_direct=remote_url in direct_remote_urls,
+                    )
                 )
+            url = provider_urls
     if content is not None and len(content) == 0:
         content = None
     if urlstandby:
@@ -218,6 +227,14 @@ def _split_sources(source: str) -> tuple[list[str] | None, str | None]:
 
     standalone = "\n".join(standalone_urls) or None
     return (remote_urls or None, standalone)
+
+
+def _split_direct_remote_urls(source: str | None) -> set[str]:
+    if source is None:
+        return set()
+
+    remote_urls, _ = _split_sources(source)
+    return set(remote_urls or [])
 
 
 def _resolve_template_name(template_name: str | None) -> str:

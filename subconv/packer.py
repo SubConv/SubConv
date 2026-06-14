@@ -1,5 +1,6 @@
 import re
 import random
+from dataclasses import dataclass
 from typing import Any
 
 import yaml
@@ -12,8 +13,14 @@ from . import subscription
 ProxyMapping = dict[str, Any]
 
 
+@dataclass(frozen=True)
+class RemoteSubscription:
+    url: str
+    force_direct: bool = False
+
+
 async def pack(
-    url: list[str] | None,
+    url: list[RemoteSubscription] | None,
     urlstandalone: list[ProxyMapping] | None,
     urlstandby: list[str] | None,
     urlstandbystandalone: list[ProxyMapping] | None,
@@ -60,22 +67,21 @@ async def pack(
     provider_map: dict[str, ProxyMapping] = providers["proxy-providers"]
     if url or urlstandby:
         if url:
-            for u in range(len(url)):
-                provider_map.update(
-                    {
-                        "subscription{}".format(u): {
-                            "type": "http",
-                            "url": url[u],
-                            "interval": int(interval),
-                            "path": "./sub/subscription{}.yaml".format(u),
-                            "health-check": {
-                                "enable": True,
-                                "interval": 60,
-                                "url": template_config.TEST_URL,
-                            },
-                        }
-                    }
-                )
+            for u, source in enumerate(url):
+                provider: ProxyMapping = {
+                    "type": "http",
+                    "url": source.url,
+                    "interval": int(interval),
+                    "path": "./sub/subscription{}.yaml".format(u),
+                    "health-check": {
+                        "enable": True,
+                        "interval": 60,
+                        "url": template_config.TEST_URL,
+                    },
+                }
+                if source.force_direct:
+                    provider["proxy"] = "DIRECT"
+                provider_map.update({"subscription{}".format(u): provider})
         if urlstandby:
             for u in range(len(urlstandby)):
                 provider_map.update(
