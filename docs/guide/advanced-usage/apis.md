@@ -12,8 +12,11 @@ It accepts GET requests. Here're the parameters:
 | template | Template ID used to render the final config. | Yes | zju | Built-in values are `zju` and `general`. When omitted, `zju` is used. |
 | interval | The interval of proxy update. | Yes | 1800 | Unit: seconds. |
 | urlstandby | The URL of the standby subscription or node sharing link. The proxies in it will only be added to the **manual switch group** (the group whose `"manual"` is `True` in the configuration file), and will not be classified into region groups. **It's recommended to be URIComponent encoded.** | Yes | - | Multiple subscription links are supported. You can use line breaks or "|" to separate them. |
+| direct | Original subscription URLs or hosts that should be forced to `DIRECT` in the generated mihomo rules. **It needs to be URIComponent encoded.** | Yes | - | Use line breaks or "|" to separate multiple entries. Each host must come from `url` or `urlstandby`; otherwise the request returns 400. This only adds exact `DOMAIN,<host>,DIRECT` rules. |
 | short | If this parameter is set (regardless of its value), the header section and dns section containing allow-lan will not be generated. | Yes | - | - |
 | npr | If this parameter is set (regardless of its value), the URL of the ruleset will not be proxied. | Yes | - | By default, this service is used to proxy the URL of the ruleset to ensure that the ruleset can be obtained normally. If this parameter is set, the URL of the ruleset will not be proxied. |
+
+`direct` is intended for local gateway or transparent proxy deployments. It makes the generated mihomo config route selected original subscription domains directly, so SubConv's later backend fetches are less likely to be trapped by a broken proxy chain when the same mihomo instance handles transparent proxy traffic. It does not change how SubConv's HTTP client connects, and it does not solve the first generation request if the backend cannot fetch the original subscription before the generated config is loaded.
 
 ## GET /provider
 This API converts the subscription to the configuration required by proxy-provider. This API will be called whenever the proxy is updated via proxy-provider.
