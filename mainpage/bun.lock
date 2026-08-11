@@ -4,7 +4,7 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "element-plus": "^2.14.0",
+        "element-plus": "^2.14.4",
         "vue": "^3.5.34",
       },
       "devDependencies": {
@@ -32,11 +32,11 @@
 
     "@emnapi/wasi-threads": ["@emnapi/wasi-threads@1.2.1", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-uTII7OYF+/Mes/MrcIOYp5yOtSMLBWSIoLPpcgwipoiKbli6k322tcoFsxoIIxPDqW01SQGAgko4EzZi2BNv2w=="],
 
-    "@floating-ui/core": ["@floating-ui/core@1.7.5", "", { "dependencies": { "@floating-ui/utils": "^0.2.11" } }, "sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ=="],
+    "@floating-ui/core": ["@floating-ui/core@1.8.0", "", { "dependencies": { "@floating-ui/utils": "^0.2.12" } }, "sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ=="],
 
-    "@floating-ui/dom": ["@floating-ui/dom@1.7.6", "", { "dependencies": { "@floating-ui/core": "^1.7.5", "@floating-ui/utils": "^0.2.11" } }, "sha512-9gZSAI5XM36880PPMm//9dfiEngYoC6Am2izES1FF406YFsjvyBMmeJ2g4SAju3xWwtuynNRFL2s9hgxpLI5SQ=="],
+    "@floating-ui/dom": ["@floating-ui/dom@1.8.0", "", { "dependencies": { "@floating-ui/core": "^1.8.0", "@floating-ui/utils": "^0.2.12" } }, "sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg=="],
 
-    "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
+    "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
 
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.5", "", {}, "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="],
 
@@ -120,7 +120,7 @@
 
     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 
-    "element-plus": ["element-plus@2.14.0", "", { "dependencies": { "@ctrl/tinycolor": "^4.2.0", "@element-plus/icons-vue": "^2.3.2", "@floating-ui/dom": "^1.0.1", "@popperjs/core": "npm:@sxzz/popperjs-es@^2.11.8", "@types/lodash": "^4.17.24", "@types/lodash-es": "^4.17.12", "@vueuse/core": "14.3.0", "async-validator": "^4.2.5", "dayjs": "^1.11.20", "lodash": "^4.18.1", "lodash-es": "^4.18.1", "lodash-unified": "^1.0.3", "memoize-one": "^6.0.0", "normalize-wheel-es": "^1.2.0", "vue-component-type-helpers": "^3.2.8" }, "peerDependencies": { "vue": "^3.3.7" } }, "sha512-POgH+TtoreaEKWqYYAVQyE6i8rQMEFqAEublyF29dBA5yASWPLKY6EzfeqBTr2Uv26mPss4vSrMrNPyaK7LX5w=="],
+    "element-plus": ["element-plus@2.14.4", "", { "dependencies": { "@ctrl/tinycolor": "^4.2.0", "@element-plus/icons-vue": "^2.3.2", "@floating-ui/dom": "^1.8.0", "@popperjs/core": "npm:@sxzz/popperjs-es@^2.11.8", "@types/lodash": "^4.17.24", "@types/lodash-es": "^4.17.12", "@vueuse/core": "14.3.0", "async-validator": "^4.2.5", "dayjs": "^1.11.20", "lodash": "^4.18.1", "lodash-es": "^4.18.1", "lodash-unified": "^1.0.3", "memoize-one": "^6.0.0", "normalize-wheel-es": "^1.2.0", "vue-component-type-helpers": "^3.3.9" }, "peerDependencies": { "vue": "^3.3.7" } }, "sha512-vMKR9tFcLeNrJgFXA3zhUn6YuRKUQW9d0btakBR8U1Iq8MfzkjMOGcgs5de2VgiLldHt69brmuBHpxc3bK4ZgQ=="],
 
     "entities": ["entities@7.0.1", "", {}, "sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA=="],
 
@@ -186,7 +186,7 @@
 
     "vue": ["vue@3.5.34", "", { "dependencies": { "@vue/compiler-dom": "3.5.34", "@vue/compiler-sfc": "3.5.34", "@vue/runtime-dom": "3.5.34", "@vue/server-renderer": "3.5.34", "@vue/shared": "3.5.34" }, "peerDependencies": { "typescript": "*" }, "optionalPeers": ["typescript"] }, "sha512-WdLBG9gm02OgJIG9axd5Hpx0TFLdzVgfG2evFFu8Rur5O/IoGc5cMjnjh3tPL6GnRGsYvUhBSKVPYVcxRKpMCA=="],
 
-    "vue-component-type-helpers": ["vue-component-type-helpers@3.2.8", "", {}, "sha512-9689efAXhN/EV86plgkL/XFiJSXhGtWPG6JDboZ+QnjlUWUUQrQ0ILKQtw4iQsuwIwu5k6Aw+JnehDe7161e7A=="],
+    "vue-component-type-helpers": ["vue-component-type-helpers@3.3.9", "", {}, "sha512-3c/UfMe0SqyEfcGTyH7mfshHagJ9QTCbppCb0/uGpHZpFug7+If3GeGZN7I0YheKEExemx3xldQPoO7PQSOLQg=="],
 
     "@vue/compiler-sfc/postcss": ["postcss@8.5.14", "", { "dependencies": { "nanoid": "^3.3.11", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-SoSL4+OSEtR99LHFZQiJLkT59C5B1amGO1NzTwj7TT1qCUgUO6hxOvzkOYxD+vMrXBM3XJIKzokoERdqQq/Zmg=="],
 
