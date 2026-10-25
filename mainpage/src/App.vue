@@ -14,8 +14,14 @@
 
             <el-form label-position="right" label-width="100px" class="main">
                 <el-form-item label="订阅">
-                    <el-input type="textarea" v-model="linkInput" rows="5" resize="none"
-                        placeholder="请粘贴订阅链接，或者分享链接，多个订阅链接请换行或用|符号隔开"></el-input>
+                    <div class="subscription-list">
+                        <div class="subscription-row" v-for="item in subscriptions" :key="item.id">
+                            <el-input v-model="item.value" placeholder="请粘贴订阅链接或分享链接" @paste="handleSubscriptionPaste($event, item.id, subscriptions)"></el-input>
+                            <el-switch v-model="item.direct" active-text="强制直连"></el-switch>
+                            <el-button @click="removeSubscription(item.id)" :disabled="subscriptions.length === 1">删除</el-button>
+                        </div>
+                        <el-button @click="addSubscription">添加订阅</el-button>
+                    </div>
                 </el-form-item>
 
                 <el-form-item label="模板">
@@ -41,8 +47,14 @@
 
                 <el-form-item label="备用节点">
                     <el-switch v-model="standby_switch" active-text="备用节点只会出现在手动选择分组"></el-switch>
-                    <el-input type="textarea" v-model="standby" rows="5" resize="none" v-if="standby_switch"
-                        placeholder="请粘贴备用节点，多个备用节点请换行或用|符号隔开"></el-input>
+                    <div class="subscription-list standby-list" v-if="standby_switch">
+                        <div class="subscription-row" v-for="item in standbySubscriptions" :key="item.id">
+                            <el-input v-model="item.value" placeholder="请粘贴备用节点或备用订阅" @paste="handleSubscriptionPaste($event, item.id, standbySubscriptions)"></el-input>
+                            <el-switch v-model="item.direct" active-text="强制直连"></el-switch>
+                            <el-button @click="removeStandbySubscription(item.id)" :disabled="standbySubscriptions.length === 1">删除</el-button>
+                        </div>
+                        <el-button @click="addStandbySubscription">添加备用</el-button>
+                    </div>
                 </el-form-item>
 
                 <el-form-item label="更新间隔">
@@ -96,10 +108,24 @@ import 'element-plus/es/components/switch/style/css'
 import 'element-plus/es/components/select/style/css'
 import 'element-plus/es/components/option/style/css'
 import 'element-plus/es/components/message/style/css'
-const linkInput = ref('')
+
+type SubscriptionInput = {
+    id: number,
+    value: string,
+    direct: boolean
+}
+
+let nextSubscriptionId = 1
+const createSubscriptionInput = (): SubscriptionInput => ({
+    id: nextSubscriptionId++,
+    value: '',
+    direct: false
+})
+
+const subscriptions = ref<SubscriptionInput[]>([createSubscriptionInput()])
+const standbySubscriptions = ref<SubscriptionInput[]>([createSubscriptionInput()])
 const linkOutput = ref('')
 const time = ref('')
-const standby = ref('')
 const defaultTemplate = ref<string | null>(null)
 const selectedTemplate = ref<string | null>(null)
 const availableTemplates = ref<string[]>([])
@@ -107,6 +133,70 @@ const isLoadingRuntimeConfig = ref(true)
 const hasRuntimeConfigError = ref(false)
 const standby_switch = ref(false)
 const proxy_switch = ref(true)
+
+const splitSubscriptionInput = (value: string): string[] => value
+    .split(/[|\n]/)
+    .map((item) => item.trim())
+    .filter((item) => item !== '')
+
+const collectSubscriptions = (items: SubscriptionInput[]): string[] => items
+    .flatMap((item) => splitSubscriptionInput(item.value))
+
+const collectDirectSubscriptions = (items: SubscriptionInput[]): string[] => items
+    .filter((item) => item.direct)
+    .flatMap((item) => splitSubscriptionInput(item.value))
+
+const isRemoteSubscription = (value: string) => (
+    (value.startsWith('http://') || value.startsWith('https://')) && !value.startsWith('https://t.me/')
+)
+
+const hasInvalidDirectTarget = (items: string[]) => items.some((item) => !isRemoteSubscription(item))
+
+const addSubscription = () => {
+    subscriptions.value.push(createSubscriptionInput())
+}
+
+const removeSubscription = (id: number) => {
+    if (subscriptions.value.length === 1) {
+        return
+    }
+    subscriptions.value = subscriptions.value.filter((item) => item.id !== id)
+}
+
+const addStandbySubscription = () => {
+    standbySubscriptions.value.push(createSubscriptionInput())
+}
+
+const removeStandbySubscription = (id: number) => {
+    if (standbySubscriptions.value.length === 1) {
+        return
+    }
+    standbySubscriptions.value = standbySubscriptions.value.filter((item) => item.id !== id)
+}
+
+const handleSubscriptionPaste = (event: ClipboardEvent, id: number, items: SubscriptionInput[]) => {
+    const text = event.clipboardData?.getData('text') ?? ''
+    const values = splitSubscriptionInput(text)
+    if (values.length <= 1) {
+        return
+    }
+
+    event.preventDefault()
+    const index = items.findIndex((item) => item.id === id)
+    if (index === -1) {
+        return
+    }
+
+    items.splice(
+        index,
+        1,
+        ...values.map((value) => ({
+            ...createSubscriptionInput(),
+            value,
+            direct: items[index].direct
+        }))
+    )
+}
 
 const templateOptions = computed(() => [
     ...availableTemplates.value.map((templateName) => ({
@@ -192,7 +282,14 @@ onMounted(async () => {
 // methods
 const submitForm = () => {
     let result = window.location.protocol + "//" + window.location.host
-    if (linkInput.value !== "") {
+    const primarySubscriptions = collectSubscriptions(subscriptions.value)
+    const standbyValues = standby_switch.value ? collectSubscriptions(standbySubscriptions.value) : []
+    const directSubscriptions = [
+        ...collectDirectSubscriptions(subscriptions.value),
+        ...(standby_switch.value ? collectDirectSubscriptions(standbySubscriptions.value) : [])
+    ]
+
+    if (primarySubscriptions.length > 0) {
         if (!selectedTemplate.value) {
             ElMessage({
                 message: '模板配置加载失败，请刷新网页后重试',
@@ -201,7 +298,15 @@ const submitForm = () => {
             linkOutput.value = ""
             return false;
         }
-        result += "/sub?url=" + encodeURIComponent(linkInput.value);
+        if (hasInvalidDirectTarget(directSubscriptions)) {
+            ElMessage({
+                message: '强制直连仅支持 http/https 原始订阅链接',
+                type: 'error'
+            });
+            linkOutput.value = ""
+            return false;
+        }
+        result += "/sub?url=" + encodeURIComponent(primarySubscriptions.join('\n'));
         result += "&template=" + encodeURIComponent(selectedTemplate.value);
         if (time.value !== "") {
             if (/^[1-9][0-9]*$/.test(time.value)) {
@@ -217,9 +322,12 @@ const submitForm = () => {
             }
         }
         if (standby_switch.value) {
-            if (standby.value !== "") {
-                result += "&urlstandby=" + encodeURIComponent(standby.value);
+            if (standbyValues.length > 0) {
+                result += "&urlstandby=" + encodeURIComponent(standbyValues.join('\n'));
             }
+        }
+        if (directSubscriptions.length > 0) {
+            result += "&direct=" + encodeURIComponent(directSubscriptions.join('\n'));
         }
         if (!proxy_switch.value) {
             result += "&npr=1";
@@ -254,6 +362,32 @@ const copyForm = () => {
 
 .main {
     margin-top: 60px;
+}
+
+.subscription-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.subscription-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.subscription-row :deep(.el-input) {
+    flex: 1;
+}
+
+.subscription-row :deep(.el-switch) {
+    flex: 0 0 auto;
+}
+
+.standby-list {
+    margin-top: 12px;
 }
 
 .header {

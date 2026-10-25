@@ -1,6 +1,7 @@
 import re
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlencode, urlparse
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -8,7 +9,6 @@ from fastapi.requests import Request
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
-from urllib.parse import urlencode
 
 from . import config
 from . import packer
@@ -73,6 +73,7 @@ async def sub(request: Request):
     interval = args.get("interval", "1800")
     short = args.get("short")
     notproxyrule = args.get("npr")
+    direct_param = args.get("direct")
     template_name = _resolve_template_name(args.get("template"))
     template_config = await _load_template(template_name)
 
@@ -98,6 +99,7 @@ async def sub(request: Request):
         if urlstandbystandalone_raw
         else None
     )
+    direct_hosts = _resolve_direct_hosts(direct_param, url, urlstandby)
 
     user_agent = request.headers.get("User-Agent", "v2rayn")
 
@@ -143,6 +145,7 @@ async def sub(request: Request):
         urlstandalone=urlstandalone,
         urlstandby=urlstandby,
         urlstandbystandalone=urlstandbystandalone,
+        direct_hosts=direct_hosts,
         content=content,
         interval=interval,
         domain=domain,
@@ -261,6 +264,67 @@ def _validate_remote_url(url: str) -> str:
         raise HTTPException(status_code=400, detail=f"Invalid upstream URL: {url}")
 
     return str(parsed)
+
+
+def _resolve_direct_hosts(
+    direct_param: str | None,
+    url: list[str] | None,
+    urlstandby: list[str] | None,
+) -> list[str] | None:
+    if direct_param is None or direct_param.strip() == "":
+        return None
+
+    allowed_hosts = {
+        host
+        for source in (url or []) + (urlstandby or [])
+        if (host := _resolve_remote_url_host(source)) is not None
+    }
+    direct_hosts: list[str] = []
+    for item in filter(None, re.split(r"[|\n]", direct_param)):
+        candidate = item.strip()
+        if candidate == "":
+            continue
+        host = _resolve_direct_host(candidate)
+        if host is None:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid direct target: {candidate}",
+            )
+        if host not in allowed_hosts:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Direct target is not present in url/urlstandby: {candidate}",
+            )
+        if host not in direct_hosts:
+            direct_hosts.append(host)
+
+    return direct_hosts or None
+
+
+def _resolve_direct_host(candidate: str) -> str | None:
+    if candidate.startswith(("http://", "https://")):
+        try:
+            parsed = httpx.URL(candidate)
+        except httpx.InvalidURL:
+            return None
+        return parsed.host.lower() if parsed.host is not None else None
+
+    if "/" in candidate or "?" in candidate or "#" in candidate:
+        return None
+
+    parsed = urlparse(f"//{candidate}")
+    return parsed.hostname.lower() if parsed.hostname is not None else None
+
+
+def _resolve_remote_url_host(url: str) -> str | None:
+    try:
+        parsed = httpx.URL(url)
+    except httpx.InvalidURL as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid upstream URL: {url}") from exc
+
+    if parsed.scheme not in {"http", "https"} or parsed.host is None:
+        raise HTTPException(status_code=400, detail=f"Invalid upstream URL: {url}")
+    return parsed.host.lower()
 
 
 async def _fetch_remote_response(

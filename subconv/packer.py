@@ -17,6 +17,7 @@ async def pack(
     urlstandalone: list[ProxyMapping] | None,
     urlstandby: list[str] | None,
     urlstandbystandalone: list[ProxyMapping] | None,
+    direct_hosts: list[str] | None,
     content: list[str] | None,
     interval: str,
     domain: str,
@@ -309,6 +310,9 @@ async def pack(
     rules: dict[str, list[str]] = {"rules": []}
     rules_list = rules["rules"]
     rules_list.append(f"DOMAIN,{domain},DIRECT")
+    if direct_hosts:
+        for host in direct_hosts:
+            rules_list.append(f"DOMAIN,{host},DIRECT")
     for k, v in rule_map.items():
         if not k.startswith("[]"):
             rules_list.append(f"RULE-SET,{k},{v}")
