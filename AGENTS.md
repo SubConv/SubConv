@@ -22,8 +22,8 @@
 
 ## Verification
 
-- There is no dedicated backend test suite in this repo; the reliable checks are targeted Python validation plus buildability.
-- For backend changes, prefer: `python3 -m compileall subconv api.py` and any focused smoke script needed for the touched parser/route.
+- Converter tests live under `tests/` and run without network access. Install their optional dependencies with `uv sync --locked --group test`, then run `uv run --no-sync python -m pytest tests/`.
+- For backend changes, also run `python3 -m compileall subconv api.py` and any focused smoke script needed for the touched parser/route; the converter suite does not cover HTTP routes.
 - For frontend-only changes, the CI-equivalent check is `cd mainpage && bun install && bun run build`.
 - For docs-only changes, the CI-equivalent check is `cd docs && bun install && bun run build`.
 - If you touch packaging/build flow, also read the matching workflow under `.github/workflows/` and keep local verification aligned with it.

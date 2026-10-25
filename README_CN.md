@@ -58,6 +58,15 @@
 
 欢迎 issue 和 PR。如果要提pr请从main分支开新分支然后提pr到dev分支，或者也可以先把main合并到dev然后在dev里改，最后提pr到dev
 
+本地运行转换器测试（测试运行期间无需网络访问）：
+
+```bash
+uv sync --locked --group test
+uv run --no-sync python -m pytest tests/
+```
+
+修改后端代码、测试或 Python 依赖时，CI 会在 Python 3.13 上运行这些测试。
+
 ## 致谢
 
 - [subconverter](https://github.com/tindy2013/subconverter)

@@ -14,6 +14,9 @@ dependencies = [
 build = [
     "nuitka[onefile]",
 ]
+test = [
+    "pytest>=9.1.1",
+]
 
 [tool.uv]
 package = false

@@ -59,6 +59,15 @@ Deploy by yourself according to [docs](https://subconv.is-sb.com)
 
 Welcome issue and PR. If you want to contribute, please create a new branch from main and then create a PR to dev, or you can merge main into dev first and then make changes in dev, and finally create a PR to dev branch.
 
+Run the converter tests locally (no network access is needed during the tests):
+
+```bash
+uv sync --locked --group test
+uv run --no-sync python -m pytest tests/
+```
+
+CI runs these tests on Python 3.13 when backend code, tests, or Python dependencies change.
+
 ## Credits
 
 - [subconverter](https://github.com/tindy2013/subconverter)
