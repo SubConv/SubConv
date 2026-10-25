@@ -91,6 +91,8 @@ _DISPATCH: dict[str, ParserFn] = {
     "hysteria": parse_hysteria,
     "hysteria2": parse_hysteria2,
     "hy2": parse_hysteria2,
+    "hysteria2+realm": parse_hysteria2,
+    "hy2+realm": parse_hysteria2,
     "tuic": parse_tuic,
     "trojan": parse_trojan,
     "vless": parse_vless,

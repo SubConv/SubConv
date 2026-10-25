@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import urllib.parse as urlparse
 
 from pydantic import Field
 
 from .models import MihomoBaseModel
 from .registry import NameRegistry
-from .util import ParseError, base64_raw_std_decode, base64_raw_url_decode
+from .util import ParseError, normalize_url_userinfo
 
 
 class HttpSocksProxy(MihomoBaseModel):
@@ -39,7 +41,7 @@ def parse_http_socks(line: str, registry: NameRegistry) -> HttpSocksProxy:
 
     proxy_type = _proxy_type(url.scheme.lower())
     username, password = _parse_credentials(url)
-    name = registry.register(urlparse.unquote_plus(url.fragment) or f"{server}:{port}")
+    name = registry.register(urlparse.unquote(url.fragment) or f"{server}:{port}")
 
     payload: dict[str, object] = {
         "name": name,
@@ -69,26 +71,18 @@ def _proxy_type(scheme: str) -> str:
 
 def _parse_credentials(url: urlparse.ParseResult) -> tuple[str | None, str | None]:
     raw_userinfo, _, _ = url.netloc.rpartition("@")
-    if raw_userinfo:
-        decoded = _decode_credentials(urlparse.unquote(raw_userinfo))
-        if decoded is not None:
-            return decoded
+    if not raw_userinfo:
+        return None, None
 
-    return (None, None)
+    userinfo = normalize_url_userinfo(raw_userinfo)
+    # Match mihomo's DecodeBase64: strict standard Base64, then plaintext.
+    encoded = userinfo if "=" in userinfo else userinfo + "=" * (-len(userinfo) % 4)
+    try:
+        decoded = base64.b64decode(encoded, validate=True).decode(
+            "utf-8", errors="replace"
+        )
+    except binascii.Error:
+        decoded = userinfo
 
-
-def _decode_credentials(raw_userinfo: str) -> tuple[str | None, str | None] | None:
-    for decoder in (base64_raw_std_decode, base64_raw_url_decode):
-        try:
-            decoded = decoder(raw_userinfo)
-        except Exception:
-            continue
-
-        username, separator, password = decoded.partition(":")
-        if not username:
-            return None
-        if separator:
-            return username, password or None
-        return username, None
-
-    return None
+    parts = decoded.split(":")
+    return parts[0] or None, (parts[1] or None) if len(parts) == 2 else None

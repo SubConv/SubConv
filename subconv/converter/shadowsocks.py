@@ -48,7 +48,7 @@ def parse_ss(line: str, registry: NameRegistry) -> ShadowsocksProxy:
             plugin_name, plugin_opts = parsed_plugin
 
     payload: dict[str, object] = {
-        "name": registry.register(urlparse.unquote_plus(url.fragment)),
+        "name": registry.register(urlparse.unquote(url.fragment)),
         "type": "ss",
         "server": server,
         "port": _get_port(url),
@@ -96,13 +96,13 @@ def _parse_userinfo(url: urlparse.ParseResult) -> tuple[str, str]:
     username = url.username
     password = url.password
     if username and password is not None:
-        return username, password
+        return urlparse.unquote(username), urlparse.unquote(password)
 
     raw_userinfo, _, _ = url.netloc.rpartition("@")
     if not raw_userinfo:
         raise ParseError("shadowsocks: missing userinfo")
 
-    decoded_userinfo = _decode_base64_value(raw_userinfo)
+    decoded_userinfo = _decode_base64_value(urlparse.unquote(raw_userinfo))
     cipher, separator, decoded_password = decoded_userinfo.partition(":")
     if not separator:
         raise ParseError("shadowsocks: invalid credentials")
@@ -132,9 +132,9 @@ def _parse_plugin(plugin: str) -> tuple[str, dict[str, str | bool] | None] | Non
 
     if "v2ray-plugin" in plugin_name:
         v2ray_plugin_opts: dict[str, str | bool] = {}
-        if mode := options.get("mode"):
+        if mode := options.get("mode") or options.get("obfs"):
             v2ray_plugin_opts["mode"] = mode
-        if host := options.get("host"):
+        if host := options.get("host") or options.get("obfs-host"):
             v2ray_plugin_opts["host"] = host
         if path := options.get("path"):
             v2ray_plugin_opts["path"] = path

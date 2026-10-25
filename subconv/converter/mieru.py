@@ -41,7 +41,7 @@ def parse_mieru(line: str, registry: NameRegistry) -> list[MieruProxy]:
 
     username = urlparse.unquote(url.username) if url.username is not None else None
     password = urlparse.unquote(url.password) if url.password is not None else None
-    base_name = urlparse.unquote_plus(url.fragment) or _query_first(query, "profile") or server
+    base_name = urlparse.unquote(url.fragment) or _query_first(query, "profile") or server
     proxies: list[MieruProxy] = []
 
     for port_value, protocol in zip(ports, protocols, strict=True):

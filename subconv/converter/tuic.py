@@ -44,7 +44,7 @@ def parse_tuic(line: str, registry: NameRegistry) -> TuicProxy:
     query = dict(urlparse.parse_qsl(url.query))
 
     kwargs: dict[str, object] = {
-        "name": registry.register(urlparse.unquote_plus(url.fragment)),
+        "name": registry.register(urlparse.unquote(url.fragment)),
         "type": "tuic",
         "server": url.hostname,
         "port": url.port,
@@ -52,10 +52,10 @@ def parse_tuic(line: str, registry: NameRegistry) -> TuicProxy:
 
     password = url.password
     if password is not None:
-        kwargs["uuid"] = url.username
-        kwargs["password"] = password
+        kwargs["uuid"] = urlparse.unquote(url.username or "")
+        kwargs["password"] = urlparse.unquote(password)
     else:
-        kwargs["token"] = url.username
+        kwargs["token"] = urlparse.unquote(url.username or "")
 
     if cc := query.get("congestion_control"):
         kwargs["congestion_controller"] = cc

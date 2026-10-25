@@ -15,6 +15,9 @@ We ship two built-in templates in the root `template/` directory: `zju.yaml` and
 ## Features
 
 - Support Clash config and V2ray format base64 links (i.e. the original subscription does not have to be Clash)
+  - Share-link parsing follows mihomo, including Hysteria2 port hopping/Realm, Reality ML-KEM options, and XHTTP extra settings.
+  - HTTP/SOCKS credentials accept plaintext or Base64; URL credentials decode percent escapes according to mihomo's rules, node names preserve literal `+`, and VMess AEAD honors `packetEncoding` and uses the first `encryption` value when repeated, matching mihomo.
+  - Hysteria/Trojan TLS flags follow Go's boolean parsing: `t`/`T` are true; invalid values such as `yes` are false.
 - A Web-UI (thanks to [@Musanico](https://github.com/musanico))
 - Rules based on ACL
 - Nodes auto update based on proxy-provider

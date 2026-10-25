@@ -14,6 +14,9 @@
 ## 功能
 
 - 支持Clash配置和V2ray格式的base64链接（即原始订阅不一定是Clash）
+  - 分享链接解析对齐 mihomo，包括 Hysteria2 端口跳跃/Realm、Reality ML-KEM 选项和 XHTTP extra 配置。
+  - HTTP/SOCKS 认证支持明文和 Base64；URL 凭据按 mihomo 规则处理百分号转义，节点名称保留原始 `+`，VMess AEAD 遵循 `packetEncoding`，重复的 `encryption` 参数取第一个值，与 mihomo 一致。
+  - Hysteria/Trojan 的 TLS 布尔参数遵循 Go 的解析规则：`t`/`T` 为真，`yes` 等无效值按假处理。
 - 自带Web-UI (感谢 [@Musanico](https://github.com/musanico))
 - 大体基于 ACL 的规则
 - 基于 proxy-provider 的节点自动更新

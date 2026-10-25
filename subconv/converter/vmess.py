@@ -3,11 +3,10 @@ from __future__ import annotations
 import binascii
 import json
 import urllib.parse as urlparse
-from importlib import import_module
 from json import JSONDecodeError
-from typing import Any, Callable, Protocol, runtime_checkable
+from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from .models import (
     ECHOpts,
@@ -17,17 +16,14 @@ from .models import (
     MihomoBaseModel,
     RealityOpts,
     WsOpts,
+    XhttpOpts,
 )
 from .registry import NameRegistry
 from .util import ParseError, base64_raw_std_decode
+from .vless import handle_v_share_link
 
 
 type ModelData = dict[str, Any]
-
-
-@runtime_checkable
-class _SupportsToDict(Protocol):
-    def to_dict(self) -> dict[str, Any]: ...
 
 
 class VmessProxy(MihomoBaseModel):
@@ -53,8 +49,9 @@ class VmessProxy(MihomoBaseModel):
     h2_opts: H2Opts | None = Field(None, alias="h2-opts")
     grpc_opts: GrpcOpts | None = Field(None, alias="grpc-opts")
     ws_opts: WsOpts | None = Field(None, alias="ws-opts")
+    xhttp_opts: XhttpOpts | None = Field(None, alias="xhttp-opts")
     packet_addr: bool | None = Field(None, alias="packet-addr")
-    xudp: bool = Field(True, alias="xudp")
+    xudp: bool | None = Field(None, alias="xudp")
     packet_encoding: str | None = Field(None, alias="packet-encoding")
     global_padding: bool | None = Field(None, alias="global-padding")
     authenticated_length: bool | None = Field(None, alias="authenticated-length")
@@ -142,10 +139,9 @@ def _build_legacy_kwargs(values: dict[str, Any], registry: NameRegistry) -> Mode
             {"path": [path or "/"], "headers": headers}
         )
     elif network == "h2":
-        h2_headers: dict[str, list[str]] = {}
-        if host:
-            h2_headers["Host"] = [host]
-        kwargs["h2_opts"] = H2Opts.model_validate({"path": path, "headers": h2_headers})
+        kwargs["h2_opts"] = H2Opts.model_validate(
+            {"path": path or "/", "host": [host] if host else None}
+        )
     elif network in {"ws", "httpupgrade"}:
         kwargs["ws_opts"] = _build_ws_opts(path, host, network)
     elif network == "grpc":
@@ -193,61 +189,14 @@ def _build_ws_opts(path: str | None, host: str | None, network: str) -> WsOpts:
 
 def _parse_aead(line: str, registry: NameRegistry) -> VmessProxy:
     url = urlparse.urlparse(line)
-    if not url.hostname or not url.port:
-        raise ParseError("vmess: missing host or port")
+    query = urlparse.parse_qs(url.query, keep_blank_values=True)
+    kwargs = handle_v_share_link(url, registry, "vmess", query)
 
-    share_link = _load_handle_v_share_link()(url, registry, "vless")
-    query = dict(urlparse.parse_qsl(url.query))
-    kwargs = _normalize_share_link(share_link)
-
-    kwargs["type"] = "vmess"
     kwargs["alter_id"] = 0
-    kwargs["cipher"] = query.get("encryption") or "auto"
-    kwargs.setdefault("udp", True)
-    kwargs.setdefault("tls", False)
-    kwargs.setdefault("xudp", True)
-    kwargs.setdefault("skip_cert_verify", False)
+    encryption = query.get("encryption")
+    kwargs["cipher"] = encryption[0] if encryption and encryption[0] else "auto"
 
     return VmessProxy.model_validate(kwargs)
-
-
-def _normalize_share_link(share_link: object) -> ModelData:
-    """Convert v share link result to a dict with Python field names.
-
-    ``handle_v_share_link`` returns Python field names (e.g. ``ws_opts``
-    not ``ws-opts``), so we only need to handle ``alterId`` and strip
-    VLESS-only fields (``flow``, ``encryption``).
-    """
-    if isinstance(share_link, dict):
-        data: ModelData = dict(share_link)
-    elif isinstance(share_link, BaseModel):
-        data = dict(share_link.model_dump())
-    elif isinstance(share_link, _SupportsToDict):
-        data = dict(share_link.to_dict())
-    else:
-        raise ParseError("vmess: invalid v share link result")
-
-    if "alterId" in data:
-        data["alter_id"] = data.pop("alterId")
-
-    for key in ("flow", "encryption"):
-        data.pop(key, None)
-
-    return data
-
-
-def _load_handle_v_share_link() -> Callable[
-    [urlparse.ParseResult, NameRegistry, str], object
-]:
-    try:
-        module = import_module("subconv.converter.vless")
-    except ModuleNotFoundError as exc:
-        raise ParseError("vmess: missing vless handler") from exc
-
-    handler = getattr(module, "handle_v_share_link", None)
-    if not callable(handler):
-        raise ParseError("vmess: missing vless handler")
-    return handler
 
 
 def _parse_port(value: Any) -> int:

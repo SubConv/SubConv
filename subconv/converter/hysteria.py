@@ -13,7 +13,7 @@ from pydantic import Field
 
 from .models import MihomoBaseModel
 from .registry import NameRegistry
-from .util import ParseError
+from .util import ParseError, parse_optional_bool
 
 
 class HysteriaProxy(MihomoBaseModel):
@@ -45,7 +45,7 @@ def parse_hysteria(line: str, registry: NameRegistry) -> HysteriaProxy:
     down = query.get("down") or query.get("downmbps", "")
 
     kwargs: dict[str, object] = {
-        "name": registry.register(urlparse.unquote_plus(url.fragment)),
+        "name": registry.register(urlparse.unquote(url.fragment)),
         "type": "hysteria",
         "server": url.hostname,
         "port": url.port,
@@ -61,12 +61,6 @@ def parse_hysteria(line: str, registry: NameRegistry) -> HysteriaProxy:
         kwargs["alpn"] = alpn.split(",")
 
     if query.get("insecure"):
-        kwargs["skip_cert_verify"] = _parse_bool(query.get("insecure"))
+        kwargs["skip_cert_verify"] = parse_optional_bool(query["insecure"]) or False
 
     return HysteriaProxy.model_validate(kwargs)
-
-
-def _parse_bool(val: str | None) -> bool:
-    if val is None:
-        return False
-    return val.lower() in ("1", "true", "yes")

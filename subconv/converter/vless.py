@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import binascii
 import json
+import math
 import urllib.parse as urlparse
-from typing import TypeVar
 
 from pydantic import Field
 
@@ -26,11 +26,9 @@ from .util import (
     ParseError,
     base64_raw_std_decode,
     base64_raw_url_decode,
+    parse_optional_bool,
     rand_user_agent,
 )
-
-
-T = TypeVar("T")
 
 
 class VlessProxy(MihomoBaseModel):
@@ -71,8 +69,8 @@ def parse_vless(line: str, registry: NameRegistry) -> VlessProxy:
     url = urlparse.urlparse(line)
     url = _decode_vless_host(url)
 
-    proxy = handle_v_share_link(url, registry, "vless")
     query = urlparse.parse_qs(url.query, keep_blank_values=True)
+    proxy = handle_v_share_link(url, registry, "vless", query)
 
     flow = _query_first(query, "flow")
     if flow:
@@ -86,9 +84,12 @@ def parse_vless(line: str, registry: NameRegistry) -> VlessProxy:
 
 
 def handle_v_share_link(
-    url: urlparse.ParseResult, registry: NameRegistry, scheme: str
+    url: urlparse.ParseResult,
+    registry: NameRegistry,
+    scheme: str,
+    query: dict[str, list[str]],
 ) -> dict[str, object]:
-    query = urlparse.parse_qs(url.query, keep_blank_values=True)
+    """Build shared VLESS/VMess fields from an already-decoded query."""
 
     port = _port_from_url(url)
     hostname = url.hostname
@@ -98,11 +99,11 @@ def handle_v_share_link(
         raise ParseError("v share link: missing port")
 
     proxy: dict[str, object] = {
-        "name": registry.register(urlparse.unquote_plus(url.fragment)),
+        "name": registry.register(urlparse.unquote(url.fragment)),
         "type": scheme,
         "server": hostname,
         "port": port,
-        "uuid": url.username or "",
+        "uuid": urlparse.unquote(url.username or ""),
         "udp": True,
     }
 
@@ -129,6 +130,9 @@ def handle_v_share_link(
         proxy["reality_opts"] = RealityOpts.model_construct(
             public_key=pbk,
             short_id=_query_first(query, "sid") or None,
+            support_x25519mlkem768=parse_optional_bool(
+                _query_first(query, "support-x25519mlkem768")
+            ),
         )
 
     packet_encoding = _query_first(query, "packetEncoding")
@@ -167,9 +171,8 @@ def handle_v_share_link(
         h2_path = _query_first(query, "path") or "/"
         h2_host = _query_first(query, "host")
         proxy["h2_opts"] = H2Opts.model_construct(
-            path=[h2_path],
+            path=h2_path,
             host=[h2_host] if h2_host else None,
-            headers={},
         )
 
     elif network in {"ws", "httpupgrade"}:
@@ -221,42 +224,24 @@ def handle_v_share_link(
         extra = _query_first(query, "extra")
         if extra:
             try:
-                extra_map = json.loads(extra)
-            except json.JSONDecodeError:
+                extra_map = json.loads(
+                    extra,
+                    parse_int=_parse_finite_json_number,
+                    parse_float=_parse_finite_json_number,
+                    parse_constant=_parse_finite_json_number,
+                )
+            except ValueError:
                 extra_map = None
             if isinstance(extra_map, dict):
                 extra_opts = _parse_xhttp_extra(extra_map)
 
-        proxy["xhttp_opts"] = XhttpOpts.model_construct(
-            path=path or None,
-            host=host or None,
-            mode=mode or None,
-            headers=None,
-            no_grpc_header=_get_typed(extra_opts, "no_grpc_header", bool),
-            x_padding_bytes=_get_typed(extra_opts, "x_padding_bytes", str),
-            x_padding_obfs_mode=_get_typed(extra_opts, "x_padding_obfs_mode", bool),
-            x_padding_key=_get_typed(extra_opts, "x_padding_key", str),
-            x_padding_header=_get_typed(extra_opts, "x_padding_header", str),
-            x_padding_placement=_get_typed(extra_opts, "x_padding_placement", str),
-            x_padding_method=_get_typed(extra_opts, "x_padding_method", str),
-            uplink_http_method=_get_typed(extra_opts, "uplink_http_method", str),
-            session_placement=_get_typed(extra_opts, "session_placement", str),
-            session_key=_get_typed(extra_opts, "session_key", str),
-            seq_placement=_get_typed(extra_opts, "seq_placement", str),
-            seq_key=_get_typed(extra_opts, "seq_key", str),
-            uplink_data_placement=_get_typed(extra_opts, "uplink_data_placement", str),
-            uplink_data_key=_get_typed(extra_opts, "uplink_data_key", str),
-            uplink_chunk_size=_get_typed(extra_opts, "uplink_chunk_size", int),
-            sc_max_each_post_bytes=_get_typed(
-                extra_opts, "sc_max_each_post_bytes", int
-            ),
-            sc_min_posts_interval_ms=_get_typed(
-                extra_opts, "sc_min_posts_interval_ms", int
-            ),
-            reuse_settings=_get_typed(extra_opts, "reuse_settings", XhttpReuseSettings),
-            download_settings=_get_typed(
-                extra_opts, "download_settings", XhttpDownloadSettings
-            ),
+        proxy["xhttp_opts"] = XhttpOpts.model_validate(
+            {
+                "path": path or None,
+                "host": host or None,
+                "mode": mode or None,
+                **extra_opts,
+            }
         )
 
     return proxy
@@ -299,15 +284,25 @@ def _port_from_url(url: urlparse.ParseResult) -> int | None:
         raise ParseError(f"v share link: invalid port: {exc}") from exc
 
 
-def _get_typed(source: dict[str, object], key: str, typ: type[T]) -> T | None:
-    value = source.get(key)
-    if isinstance(value, typ):
-        return value
-    return None
+def _parse_finite_json_number(value: str) -> float:
+    """Decode JSON numbers as float64, rejecting Go-incompatible non-finite values."""
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("non-finite JSON number")
+    return number
+
+
+def _go_int64(value: int | float) -> int:
+    """Truncate and bound JSON numeric options to a signed 64-bit integer."""
+    return min(max(int(value), -(1 << 63)), (1 << 63) - 1)
 
 
 def _parse_xhttp_extra(extra: dict[str, object]) -> dict[str, object]:
     opts: dict[str, object] = {}
+
+    headers = extra.get("headers")
+    if isinstance(headers, dict) and headers:
+        opts["headers"] = headers
 
     no_grpc_header = extra.get("noGRPCHeader")
     if isinstance(no_grpc_header, bool) and no_grpc_header:
@@ -322,9 +317,10 @@ def _parse_xhttp_extra(extra: dict[str, object]) -> dict[str, object]:
         "xPaddingHeader": "x_padding_header",
         "xPaddingPlacement": "x_padding_placement",
         "xPaddingMethod": "x_padding_method",
-        "uplinkHttpMethod": "uplink_http_method",
+        "uplinkHTTPMethod": "uplink_http_method",
         "sessionPlacement": "session_placement",
         "sessionKey": "session_key",
+        "sessionIDTable": "session_table",
         "seqPlacement": "seq_placement",
         "seqKey": "seq_key",
         "uplinkDataPlacement": "uplink_data_placement",
@@ -333,6 +329,20 @@ def _parse_xhttp_extra(extra: dict[str, object]) -> dict[str, object]:
         value = extra.get(source)
         if isinstance(value, str) and value:
             opts[target] = value
+
+    for source, target in {
+        "sessionIDPlacement": "session_placement",
+        "sessionIDKey": "session_key",
+    }.items():
+        value = extra.get(source)
+        if isinstance(value, str) and value:
+            opts[target] = value
+
+    session_length = extra.get("sessionIDLength")
+    if isinstance(session_length, str) and session_length:
+        opts["session_length"] = session_length
+    elif type(session_length) in (int, float):
+        opts["session_length"] = str(_go_int64(session_length))
 
     x_padding_obfs_mode = extra.get("xPaddingObfsMode")
     if isinstance(x_padding_obfs_mode, bool):
@@ -344,8 +354,8 @@ def _parse_xhttp_extra(extra: dict[str, object]) -> dict[str, object]:
         "scMinPostsIntervalMs": "sc_min_posts_interval_ms",
     }.items():
         value = extra.get(source)
-        if isinstance(value, (int, float)):
-            opts[target] = int(value)
+        if type(value) in (int, float):
+            opts[target] = _go_int64(value)
 
     xmux = extra.get("xmux")
     if isinstance(xmux, dict):
@@ -376,12 +386,12 @@ def _xmux_to_reuse_settings(xmux: dict[str, object]) -> XhttpReuseSettings | Non
         value = xmux.get(source)
         if isinstance(value, str) and value:
             kwargs[target] = value
-        elif isinstance(value, (int, float)):
-            kwargs[target] = str(int(value))
+        elif type(value) in (int, float):
+            kwargs[target] = str(_go_int64(value))
 
     h_keep_alive_period = xmux.get("hKeepAlivePeriod")
-    if isinstance(h_keep_alive_period, (int, float)):
-        kwargs["h_keep_alive_period"] = int(h_keep_alive_period)
+    if type(h_keep_alive_period) in (int, float):
+        kwargs["h_keep_alive_period"] = _go_int64(h_keep_alive_period)
 
     if not kwargs:
         return None
@@ -398,8 +408,8 @@ def _parse_xhttp_download_settings(
         kwargs["server"] = address
 
     port = download_settings.get("port")
-    if isinstance(port, (int, float)):
-        kwargs["port"] = int(port)
+    if type(port) in (int, float):
+        kwargs["port"] = _go_int64(port)
 
     security = download_settings.get("security")
     if isinstance(security, str) and security.lower() in {"tls", "reality"}:
@@ -429,11 +439,13 @@ def _parse_xhttp_download_settings(
             reality_settings = download_settings.get("realitySettings")
             if isinstance(reality_settings, dict):
                 public_key = reality_settings.get("publicKey")
-                if isinstance(public_key, str) and public_key:
-                    short_id = reality_settings.get("shortId")
+                short_id = reality_settings.get("shortId")
+                public_key = public_key if isinstance(public_key, str) and public_key else None
+                short_id = short_id if isinstance(short_id, str) and short_id else None
+                if public_key is not None or short_id is not None:
                     kwargs["reality_opts"] = RealityOpts.model_construct(
                         public_key=public_key,
-                        short_id=short_id if isinstance(short_id, str) else None,
+                        short_id=short_id,
                     )
 
     xhttp_settings = download_settings.get("xhttpSettings")
@@ -449,23 +461,6 @@ def _parse_xhttp_download_settings(
         headers = xhttp_settings.get("headers")
         if isinstance(headers, dict) and headers:
             kwargs["headers"] = headers
-
-        no_grpc_header = xhttp_settings.get("noGRPCHeader")
-        if isinstance(no_grpc_header, bool) and no_grpc_header:
-            kwargs["no_grpc_header"] = True
-
-        x_padding_bytes = xhttp_settings.get("xPaddingBytes")
-        if isinstance(x_padding_bytes, str) and x_padding_bytes:
-            kwargs["x_padding_bytes"] = x_padding_bytes
-
-        nested_opts = _parse_xhttp_extra(xhttp_settings)
-        kwargs.update(
-            {
-                key: value
-                for key, value in nested_opts.items()
-                if key != "download_settings"
-            }
-        )
 
         extra = xhttp_settings.get("extra")
         if isinstance(extra, dict):

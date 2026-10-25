@@ -45,7 +45,7 @@ def parse_anytls(line: str, registry: NameRegistry) -> AnyTLSProxy:
         raise ParseError("anytls: missing password")
 
     query = dict(urlparse.parse_qsl(url.query))
-    name = urlparse.unquote_plus(url.fragment) or f"{url.hostname}:{url.port}"
+    name = urlparse.unquote(url.fragment) or f"{url.hostname}:{url.port}"
 
     return AnyTLSProxy.model_validate(
         {
