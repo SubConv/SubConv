@@ -1,5 +1,32 @@
 # Changelog
 
+## [v4.0.0] - 2026-10-26
+
+### Breaking Changes
+
+- Block private-network upstream subscriptions and rule URLs by default. Trusted deployments that need local or private upstreams must set `ALLOW_PRIVATE_NETWORKS: true` in `config.yaml` or the equivalent environment variable.
+- Reject an entire conversion when any node is malformed instead of silently dropping failed nodes. Invalid direct links return 400; invalid upstream subscriptions return 502. Blank lines and `#` metadata comments remain supported.
+- Enforce subscription and YAML resource limits, including 10,000 proxies and 10 MiB of expanded scalar fields per parsed subscription. Unsupported template filter syntax now fails validation at startup.
+
+### Features and Fixes
+
+- Align share-link conversion with mihomo Meta across VLESS, VMess, Shadowsocks, SSR, Trojan, Hysteria, Hysteria2, TUIC, AnyTLS and Mieru, including transport options, credentials, Base64 validation and repeated query parameters.
+- Normalize Telegram SOCKS links to mihomo's `socks5` type and reject unsupported Telegram proxy types.
+- Support bounded YAML anchors, aliases and merge keys while preserving subscription names such as `on`, `off`, `yes` and `no` as strings.
+- Validate DNS addresses and redirect targets, pin outbound connections to checked addresses, retain Host/SNI, race TCP connections and bound decompression at every layer.
+- Close proxied upstream resources on cancellation and disconnects, including failures while sending response headers.
+- Preserve SubConv's direct-node filtering, primary/standby and `manual` semantics; fix empty groups, name collisions and inline rule option placement.
+- Validate update intervals and report clipboard failures accurately in the Web UI.
+
+### Build and Dependencies
+
+- Add offline backend regression tests and CI coverage for converters, routes, grouping, YAML and upstream transports.
+- Repair multi-platform Alpine/Nuitka image builds and update the GitHub release action to v2.
+- Refresh backend, frontend, documentation and build dependencies, including FastAPI, uvicorn, Vue, Element Plus, Vite and VitePress; pin HTTPcore for the checked-address transport integration.
+- Update English and Chinese documentation with migration settings, limits and API error behavior.
+
+**Full Changelog**: https://github.com/SubConv/SubConv/compare/v3.1.0...v4.0.0
+
 ## [v3.1.0] - 2026-04-26
 
 ### Features
