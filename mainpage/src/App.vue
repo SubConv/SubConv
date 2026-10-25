@@ -204,12 +204,12 @@ const submitForm = () => {
         result += "/sub?url=" + encodeURIComponent(linkInput.value);
         result += "&template=" + encodeURIComponent(selectedTemplate.value);
         if (time.value !== "") {
-            if (/^[1-9][0-9]*$/.test(time.value)) {
+            if (/^[1-9][0-9]*$/.test(time.value) && Number(time.value) <= 2147483647) {
                 result += "&interval=" + time.value;
             }
             else {
                 ElMessage({
-                    message: '时间间隔必须为整数',
+                    message: '时间间隔必须为 1 到 2147483647 之间的整数',
                     type: 'error'
                 });
                 linkOutput.value = ""
@@ -235,11 +235,41 @@ const submitForm = () => {
     linkOutput.value = result
 }
 
-const copyForm = () => {
-    navigator.clipboard.writeText(linkOutput.value);
+const copyForm = async () => {
+    if (!linkOutput.value) {
+        ElMessage({ message: '请先生成订阅链接', type: 'warning' })
+        return
+    }
+    let copied = false
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(linkOutput.value)
+            copied = true
+        }
+    } catch {
+        // Try the selection-based fallback when clipboard permissions are denied.
+    }
+    if (!copied) {
+        const textarea = document.createElement('textarea')
+        textarea.value = linkOutput.value
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        const activeElement = document.activeElement as HTMLElement | null
+        document.body.appendChild(textarea)
+        try {
+            textarea.focus()
+            textarea.select()
+            copied = document.execCommand('copy')
+        } catch {
+            copied = false
+        } finally {
+            textarea.remove()
+            activeElement?.focus()
+        }
+    }
     ElMessage({
-        message: '复制成功',
-        type: 'success'
+        message: copied ? '复制成功' : '复制失败，请手动选择并复制订阅链接',
+        type: copied ? 'success' : 'error'
     })
 }
 
