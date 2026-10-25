@@ -8,6 +8,9 @@
     "preview": "bunx --bun vitepress preview"
   },
   "devDependencies": {
-    "vitepress": "^1.0.0-rc.32"
+    "vitepress": "^1.6.4"
+  },
+  "overrides": {
+    "vite": "^6.4.5"
   }
 }
