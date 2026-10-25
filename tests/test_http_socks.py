@@ -1,7 +1,6 @@
 """Tests for subconv.converter.http_socks.parse_http_socks.
 
-Note: credentials are only recognised when the userinfo is the
-base64 encoding of "user:pass" (the format this parser implements).
+Credentials support both base64 userinfo and plaintext fallback, as in mihomo.
 """
 
 import base64
@@ -67,12 +66,10 @@ def test_no_credentials(registry):
     }
 
 
-def test_plain_text_credentials_are_dropped(registry):
-    # Current upstream behaviour: a non-base64 "user:pass" userinfo does
-    # not decode to credentials, so username/password are omitted.
+def test_plain_text_credentials_are_preserved(registry):
     result = parse_http_socks("http://user:pass@http.example.com:8080#PlainCred", registry).to_dict()
-    assert "username" not in result
-    assert "password" not in result
+    assert result["username"] == "user"
+    assert result["password"] == "pass"
 
 
 def test_default_name_is_host_port(registry):

@@ -97,3 +97,70 @@ def test_hysteria2_without_auth_has_no_password(registry):
 def test_hysteria2_missing_host_raises(registry):
     with pytest.raises(ParseError, match="missing host"):
         parse_hysteria2("hysteria2://authpass@:443#x", registry)
+
+
+@pytest.mark.parametrize("scheme", ["hysteria2+realm", "hy2+realm"])
+def test_hysteria2_realm_auth_and_repeated_stun_servers(registry, scheme):
+    # Reference: mihomo Meta 3f27ef3, common/convert/converter.go.
+    line = (
+        f"{scheme}://user:p%2Fss@realm.example.com:8443/room%2F42"
+        "?auth=proxy-password&stun=stun1.example.com:3478"
+        "&stun=stun2.example.com:3478#Realm+Node"
+    )
+    assert parse_hysteria2(line, registry).to_dict() == {
+        "name": "Realm+Node",
+        "type": "hysteria2",
+        "server": "realm.example.com",
+        "port": 8443,
+        "password": "proxy-password",
+        "realm-opts": {
+            "enable": True,
+            "server-url": "https://realm.example.com:8443",
+            "token": "user:p/ss",
+            "realm-id": "room/42",
+            "stun-servers": ["stun1.example.com:3478", "stun2.example.com:3478"],
+        },
+    }
+
+
+@pytest.mark.parametrize("ports", ["443,8443", "443-445,8443"])
+def test_hysteria2_hopping_uses_first_port_and_keeps_port_list(registry, ports):
+    result = parse_hysteria2(
+        f"hy2://password@hy2.example.com:{ports}#Hopping", registry
+    ).to_dict()
+    assert result["port"] == 443
+    assert result["ports"] == ports
+    assert result["password"] == "password"
+
+
+def test_hysteria2_realm_without_userinfo_omits_token(registry):
+    result = parse_hysteria2("hy2+realm://realm.example.com/room", registry).to_dict()
+    assert result["realm-opts"] == {
+        "enable": True,
+        "server-url": "https://realm.example.com",
+        "realm-id": "room",
+    }
+    assert "password" not in result
+
+
+def test_hysteria2_bad_query_pairs_do_not_discard_valid_pairs(registry):
+    line = (
+        "hy2+realm://token@realm.example.com/room"
+        "?auth=%GG&auth=password&stun=bad;pair&stun=stun.example.com:3478"
+    )
+    result = parse_hysteria2(line, registry).to_dict()
+    assert result["password"] == "password"
+    assert result["realm-opts"]["stun-servers"] == ["stun.example.com:3478"]
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "hy2://bad%GG@hy2.example.com:443#Name",
+        "hy2://password@hy2.example.com:443/bad%GG#Name",
+        "hy2://password@hy2.example.com:443#bad%GG",
+    ],
+)
+def test_hysteria2_invalid_url_escapes_raise_parse_error(registry, line):
+    with pytest.raises(ParseError):
+        parse_hysteria2(line, registry)

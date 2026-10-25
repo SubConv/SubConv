@@ -71,7 +71,7 @@ def test_type_http_maps_to_h2_network(registry):
     line = "vless://u-1@v.example.com:443?security=tls&type=http#H2"
     result = parse_vless(line, registry).to_dict()
     assert result["network"] == "h2"
-    assert result["h2-opts"] == {"path": ["/"], "headers": {}}
+    assert result["h2-opts"] == {"path": "/"}
 
 
 def test_tcp_with_http_header_type_maps_to_http_network(registry):
@@ -107,9 +107,9 @@ def test_packet_encoding_packet_sets_packet_addr(registry):
     assert "xudp" not in result
 
 
-def test_plus_in_fragment_decodes_to_space(registry):
+def test_plus_in_fragment_is_preserved(registry):
     line = "vless://u-1@v.example.com:443#Name+With+Plus"
-    assert parse_vless(line, registry).to_dict()["name"] == "Name With Plus"
+    assert parse_vless(line, registry).to_dict()["name"] == "Name+With+Plus"
 
 
 def test_missing_port_raises(registry):

@@ -1,8 +1,5 @@
 """Tests for subconv.converter.models transport/TLS option models."""
 
-import pytest
-from pydantic import ValidationError
-
 from subconv.converter.models import (
     GrpcOpts,
     H2Opts,
@@ -55,9 +52,11 @@ def test_grpc_opts_service_name_alias():
     assert opts.to_dict() == {"grpc-service-name": "svc"}
 
 
-def test_reality_opts_requires_public_key():
-    with pytest.raises(ValidationError):
-        RealityOpts.model_validate({})
+def test_reality_opts_allows_short_id_without_public_key():
+    # XHTTP downloadSettings can contain only realitySettings.shortId.
+    assert RealityOpts.model_validate({"short-id": "ab"}).to_dict() == {
+        "short-id": "ab"
+    }
 
 
 def test_reality_opts_short_id_optional():

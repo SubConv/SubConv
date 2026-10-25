@@ -118,3 +118,23 @@ def test_ssr_link_dispatches():
     result = convert("ssr://" + b64url(inner))
     assert result[0]["type"] == "ssr"
     assert result[0]["name"] == "R"
+
+
+def test_malformed_realm_line_does_not_discard_valid_nodes():
+    lines = "\n".join([
+        "hy2+realm://bad%GG@realm.example.com/room#Bad",
+        "hy2+realm://token@realm.example.com/room?auth=password#Realm",
+        "trojan://pw@t.example.com:443#Trojan",
+    ])
+    assert [node["name"] for node in convert(lines)] == ["Realm", "Trojan"]
+
+
+def test_unexpected_parser_errors_are_not_silenced(monkeypatch):
+    from subconv.converter import parser
+
+    def broken_parser(line, registry):
+        raise RuntimeError("parser defect")
+
+    monkeypatch.setitem(parser._DISPATCH, "trojan", broken_parser)
+    with pytest.raises(RuntimeError, match="parser defect"):
+        convert("trojan://pw@t.example.com:443#Trojan")

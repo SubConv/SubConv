@@ -89,7 +89,7 @@ def test_legacy_net_http_maps_to_h2(registry):
     cfg = {**BASE_CFG, "net": "http", "host": "h.example.com", "path": "/h2p"}
     result = parse_vmess(vmess_uri(cfg), registry).to_dict()
     assert result["network"] == "h2"
-    assert result["h2-opts"] == {"path": "/h2p", "headers": {"Host": ["h.example.com"]}}
+    assert result["h2-opts"] == {"path": "/h2p", "host": ["h.example.com"]}
 
 
 def test_legacy_grpc_network(registry):
@@ -170,7 +170,7 @@ def test_non_object_json_payload_raises(registry):
 def test_garbage_input_falls_through_to_aead_error(registry):
     # Undecodable legacy payloads fall back to the AEAD/URL parser, whose
     # error is what surfaces (current upstream behaviour).
-    with pytest.raises(ParseError, match="missing host or port"):
+    with pytest.raises(ParseError, match="missing port"):
         parse_vmess("vmess://!!!notbase64!!!", registry)
 
 
@@ -178,3 +178,23 @@ def test_duplicate_names_deduplicated(registry):
     uri = vmess_uri(BASE_CFG)
     assert parse_vmess(uri, registry).to_dict()["name"] == "Node"
     assert parse_vmess(uri, registry).to_dict()["name"] == "Node-01"
+
+
+@pytest.mark.parametrize(
+    "query,cipher",
+    [
+        ("encryption=none&encryption=auto", "none"),
+        ("encryption=&encryption=none", "auto"),
+    ],
+)
+def test_aead_encryption_uses_first_query_value(registry, query, cipher):
+    result = parse_vmess(f"vmess://{UUID}@example.com:443?{query}#AEAD", registry).to_dict()
+    assert result["cipher"] == cipher
+
+
+@pytest.mark.parametrize("encoding", ["none", "packet"])
+def test_aead_packet_encoding_does_not_force_xudp(registry, encoding):
+    line = f"vmess://{UUID}@example.com:443?packetEncoding={encoding}#AEAD"
+    result = parse_vmess(line, registry).to_dict()
+    assert "xudp" not in result
+    assert result.get("packet-addr", False) is (encoding == "packet")

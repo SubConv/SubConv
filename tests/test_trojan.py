@@ -61,11 +61,9 @@ def test_grpc_network_and_fingerprint_params(registry):
     assert result["fingerprint"] == "pin123"
 
 
-def test_percent_encoded_password_is_kept_verbatim(registry):
-    # Current upstream behaviour: the password is taken from url.username
-    # without percent-decoding, so escapes survive into the output.
+def test_percent_encoded_password_is_decoded(registry):
     line = "trojan://p%40ss%3Aword@t.example.com:443#EncPW"
-    assert parse_trojan(line, registry).to_dict()["password"] == "p%40ss%3Aword"
+    assert parse_trojan(line, registry).to_dict()["password"] == "p@ss:word"
 
 
 def test_missing_password_raises(registry):
