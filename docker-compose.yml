@@ -1,10 +1,13 @@
 services:
   subconv:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: wouisb/subconv:latest
     container_name: subconv
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "58288:8080"
     volumes:
       - ./config.yaml:/app/config.yaml
       - ./template:/app/template
