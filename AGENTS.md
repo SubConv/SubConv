@@ -64,3 +64,8 @@
 ## Contribution workflow
 
 - README says contributors branch from `main` and open PRs against `dev` (or merge `main` into `dev` first, then PR to `dev`).
+- All future commits must follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/).
+- Use `<type>[optional scope][!]: <description>`. Keep types lowercase and use a meaningful scope when it clarifies the affected area, such as `converter`, `api`, or `docs`.
+- Choose the type by the change: `feat` for new functionality, `fix` for bug fixes, `perf` for performance improvements, `refactor` for restructuring without behavior changes, and `docs`, `test`, `build`, `ci`, or `chore` where appropriate.
+- Mark breaking changes with `!` before the colon or a `BREAKING CHANGE: <description>` footer. Separate the optional body and footers from preceding sections with a blank line.
+- Keep commits focused and split unrelated concerns into separate commits.
