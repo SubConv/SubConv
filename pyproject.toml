@@ -3,11 +3,11 @@ name = "subconv"
 version = "2.0.0"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi==0.136.3",
+    "fastapi==0.162.0",
     "httpx==0.28.1",
-    "pydantic-settings>=2.14.1",
+    "pydantic-settings>=2.16.1",
     "pyyaml>=6.0.3",
-    "uvicorn==0.48.0",
+    "uvicorn==0.54.0",
 ]
 
 [dependency-groups]
