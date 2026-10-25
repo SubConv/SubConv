@@ -1,10 +1,18 @@
-FROM --platform=$BUILDPLATFORM python:3.13-alpine3.22 AS builder
+FROM python:3.13-alpine3.22 AS builder
 LABEL name="subconv"
 
 WORKDIR /app
 
-RUN apk add --update-cache ca-certificates tzdata patchelf clang ccache bash curl unzip && \
+RUN apk add --update-cache ca-certificates tzdata clang ccache bash curl unzip build-base && \
     apk upgrade --no-cache
+
+# Nuitka rejects Alpine's patchelf 0.18.0. Build the supported version
+# against the target architecture's musl rather than using a glibc binary.
+RUN curl -fsSL https://github.com/NixOS/patchelf/releases/download/0.17.2/patchelf-0.17.2.tar.gz -o /tmp/patchelf.tar.gz && \
+    echo "20427b718dd130e4b66d95072c2a2bd5e17232e20dad58c1bea9da81fae330e0  /tmp/patchelf.tar.gz" | sha256sum -c - && \
+    tar -xzf /tmp/patchelf.tar.gz -C /tmp && \
+    cd /tmp/patchelf-0.17.2 && ./configure && make -j2 && make install && \
+    patchelf --version && rm -rf /tmp/patchelf*
 
 ENV BUN_INSTALL=/root/.bun
 ENV PATH=${BUN_INSTALL}/bin:${PATH}

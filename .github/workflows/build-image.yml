@@ -7,7 +7,6 @@ on:
         description: 'Tag to use for the image'
         type: string
         required: true
-        default: 'dev'
 
 permissions:
   contents: read
@@ -23,13 +22,15 @@ jobs:
       tags: ${{ steps.tag.outputs.TAG_NAME }}
     steps:
       - id: tag
+        env:
+          IMAGE_TAGS: ${{ inputs.tags }}
         run: |
-          # get tag from input (comma separated) and image_repository
+          # Expand the caller's comma-separated tags without a leading comma.
           new_tag=""
-          for tag in $(echo ${{ inputs.tags }} | tr "," "\n"); do
-            new_tag="$new_tag,${{ env.IMAGE_REPOSITORY }}:$tag"
+          IFS="," read -ra tags <<< "$IMAGE_TAGS"
+          for tag in "${tags[@]}"; do
+            new_tag="${new_tag:+$new_tag,}${IMAGE_REPOSITORY}:$tag"
           done
-          # outupt
           echo "TAG_NAME=$new_tag" >> $GITHUB_OUTPUT
 
   build-and-push:
@@ -39,6 +40,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: arm64
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
