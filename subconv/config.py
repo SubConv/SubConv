@@ -5,6 +5,8 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict, YamlConfigSettingsSource
 
+from .filters import compile_group_filter
+
 
 class Group(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -15,6 +17,13 @@ class Group(BaseModel):
     manual: bool = False
     prior: str | None = None
     regex: str | None = None
+
+    @field_validator('regex')
+    @classmethod
+    def validate_regex(cls, value):
+        if value is not None:
+            compile_group_filter(value)
+        return value
 
 
 class TemplateConfig(BaseModel):
@@ -39,6 +48,7 @@ class AppConfig(BaseSettings):
     PORT: int = 8080
     DEFAULT_TEMPLATE: str = "zju"
     DISALLOW_ROBOTS: bool = True
+    ALLOW_PRIVATE_NETWORKS: bool = False
 
     @field_validator("DEFAULT_TEMPLATE")
     @classmethod

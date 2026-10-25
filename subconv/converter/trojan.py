@@ -13,7 +13,7 @@ from pydantic import Field
 
 from .models import GrpcOpts, MihomoBaseModel, WsOpts
 from .registry import NameRegistry
-from .util import ParseError, parse_optional_bool, rand_user_agent
+from .util import ParseError, first_query_values, parse_optional_bool, rand_user_agent
 
 
 class TrojanProxy(MihomoBaseModel):
@@ -43,7 +43,7 @@ def parse_trojan(line: str, registry: NameRegistry) -> TrojanProxy:
     if not url.username:
         raise ParseError("trojan: missing password")
 
-    query = dict(urlparse.parse_qsl(url.query))
+    query = first_query_values(url.query)
 
     kwargs: dict[str, object] = {
         "name": registry.register(urlparse.unquote(url.fragment)),

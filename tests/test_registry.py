@@ -31,3 +31,8 @@ def test_registries_do_not_share_state():
     second = NameRegistry()
     first.register("Node")
     assert second.register("Node") == "Node"
+
+
+def test_generated_suffixes_cannot_collide_with_original_names(registry):
+    names = [registry.register(name) for name in ["HK", "HK", "HK-01", "HK", "HK-02"]]
+    assert len(set(names)) == len(names)

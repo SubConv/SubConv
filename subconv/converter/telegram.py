@@ -6,7 +6,7 @@ from pydantic import Field
 
 from .models import MihomoBaseModel
 from .registry import NameRegistry
-from .util import ParseError
+from .util import ParseError, first_query_values
 
 
 class TelegramProxy(MihomoBaseModel):
@@ -24,7 +24,7 @@ class TelegramProxy(MihomoBaseModel):
 def parse_tg(line: str, registry: NameRegistry) -> TelegramProxy:
     url = urlparse.urlparse(line)
     proxy_type = url.hostname or ""
-    query = dict(urlparse.parse_qsl(url.query))
+    query = first_query_values(url.query)
 
     return _build_telegram_proxy(
         proxy_type=proxy_type,
@@ -41,7 +41,7 @@ def parse_tg_https(line: str, registry: NameRegistry) -> TelegramProxy:
         raise ParseError("telegram https: invalid host")
 
     proxy_type = url.path.strip("/")
-    query = dict(urlparse.parse_qsl(url.query))
+    query = first_query_values(url.query)
 
     return _build_telegram_proxy(
         proxy_type=proxy_type,
@@ -60,6 +60,8 @@ def _build_telegram_proxy(
 ) -> TelegramProxy:
     if not proxy_type:
         raise ParseError("telegram: missing proxy type")
+    if proxy_type not in {'socks', 'socks5'}:
+        raise ParseError('telegram: unsupported proxy type')
 
     server = query.get("server") or ""
     if not server:
@@ -79,7 +81,7 @@ def _build_telegram_proxy(
     return TelegramProxy.model_validate(
         {
             "name": registry.register(remark),
-            "type": proxy_type,
+            "type": 'socks5',
             "server": server,
             "port": port,
             "username": query.get("user") or None,

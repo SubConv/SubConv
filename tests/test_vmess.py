@@ -30,6 +30,24 @@ BASE_CFG = {
 }
 
 
+def test_uppercase_scheme_is_accepted(registry):
+    result = parse_vmess(vmess_uri(BASE_CFG).replace('vmess://', 'VMESS://', 1), registry).to_dict()
+    assert result['server'] == BASE_CFG['add']
+
+
+def test_ws_early_data_preserves_other_query_values(registry):
+    cfg = {**BASE_CFG, 'net': 'ws', 'path': '/ws?token=one&ed=32&token=two&z='}
+    result = parse_vmess(vmess_uri(cfg), registry).to_dict()
+    assert result['ws-opts']['path'] == '/ws?token=one&token=two&z='
+
+
+def test_deep_legacy_json_is_a_parse_error(registry):
+    raw = '{"add":"example.com","id":"u","port":443,"extra":' + '[' * 10000 + '0' + ']' * 10000 + '}'
+    link = 'vmess://' + base64.b64encode(raw.encode()).decode()
+    with pytest.raises(ParseError, match='invalid legacy json'):
+        parse_vmess(link, registry)
+
+
 def test_legacy_ws_tls_full_config(registry):
     cfg = {
         **BASE_CFG,
@@ -198,3 +216,78 @@ def test_aead_packet_encoding_does_not_force_xudp(registry, encoding):
     result = parse_vmess(line, registry).to_dict()
     assert "xudp" not in result
     assert result.get("packet-addr", False) is (encoding == "packet")
+
+
+@pytest.mark.parametrize('encoded', ['%FF', '%C0%AF'])
+def test_ws_query_rebuild_preserves_raw_bytes(registry, encoded):
+    cfg = {**BASE_CFG, 'net': 'ws', 'path': '/?ed=10&x=' + encoded}
+    result = parse_vmess(vmess_uri(cfg), registry).to_dict()
+    assert result['ws-opts']['path'] == '/?x=' + encoded
+
+
+@pytest.mark.parametrize('value', ['1_0', ' 10', '١٠', '9223372036854775808', '-9223372036854775809'])
+def test_ws_early_data_rejects_non_go_integers(registry, value):
+    path = '/?ed=' + value
+    cfg = {**BASE_CFG, 'net': 'ws', 'path': path}
+    result = parse_vmess(vmess_uri(cfg), registry).to_dict()
+    assert result['ws-opts']['path'] == path
+    assert 'max-early-data' not in result['ws-opts']
+
+
+def test_ws_early_data_accepts_long_leading_zeros(registry):
+    cfg = {**BASE_CFG, 'net': 'ws', 'path': '/?ed=' + '0' * 5000 + '10'}
+    result = parse_vmess(vmess_uri(cfg), registry).to_dict()
+    assert result['ws-opts']['max-early-data'] == 10
+
+
+@pytest.mark.parametrize('path', ['/?ed=10&eh=%FF', '/?eh=%FF'])
+def test_ws_invalid_utf8_header_uses_go_json_replacement(registry, path):
+    cfg = {**BASE_CFG, 'net': 'ws', 'path': path}
+    result = parse_vmess(vmess_uri(cfg), registry).to_dict()
+    assert result['ws-opts']['early-data-header-name'] == '�'
+    assert result['ws-opts']['path'] == '/?eh=%FF'
+
+
+def test_ws_query_rebuild_sorts_original_bytes(registry):
+    cfg = {**BASE_CFG, 'net': 'ws', 'path': '/?ed=10&%FF=x&%EF%BF%BD=y'}
+    result = parse_vmess(vmess_uri(cfg), registry).to_dict()
+    assert result['ws-opts']['path'] == '/?%EF%BF%BD=y&%FF=x'
+
+
+@pytest.mark.parametrize('path', ['/%GG?ed=10', '/%GG?ed=10&eh=custom', '/?ed=10#%GG', '/;%GG?ed=10'])
+def test_ws_invalid_url_path_preserves_path_without_early_data(registry, path):
+    cfg = {**BASE_CFG, 'net': 'ws', 'path': path}
+    result = parse_vmess(vmess_uri(cfg), registry).to_dict()
+    assert result['ws-opts'] == {'path': path, 'headers': {}}
+
+
+@pytest.mark.parametrize('path,expected', [
+    ('///a?ed=1', '///a'), ('?ed=1', ''), ('/a b?ed=1', '/a%20b'),
+    ('/中文?ed=1', '/%E4%B8%AD%E6%96%87'), ('/a%2fb?ed=1', '/a%2fb'),
+    ('/a?ed=1#b c', '/a#b%20c'), ('/a?ed=1#', '/a'),
+])
+def test_ws_early_data_rebuild_keeps_go_url_path_semantics(registry, path, expected):
+    cfg = {**BASE_CFG, 'net': 'ws', 'path': path}
+    result = parse_vmess(vmess_uri(cfg), registry).to_dict()
+    assert result['ws-opts']['path'] == expected
+    assert result['ws-opts']['max-early-data'] == 1
+
+
+@pytest.mark.parametrize('value', ['1_0', ' 10', '١٠', '9223372036854775808'])
+def test_aead_early_data_uses_same_go_integer_validation(registry, value):
+    from urllib.parse import urlencode
+    with pytest.raises(ParseError, match='bad WebSocket max early data'):
+        parse_vmess(f'vmess://{UUID}@example.com:443?' + urlencode({'type': 'ws', 'ed': value}), registry)
+
+
+def test_ws_early_data_rebuild_normalizes_scheme_like_go(registry):
+    cfg = {**BASE_CFG, 'net': 'ws', 'path': 'HTTP://example.com/a?ed=1'}
+    result = parse_vmess(vmess_uri(cfg), registry).to_dict()
+    assert result['ws-opts']['path'] == 'http://example.com/a'
+
+
+@pytest.mark.parametrize('path', ['/a\tb?ed=1', '/a\x00?ed=1', '//a:b/c?ed=1', '1:a?ed=1', '//exa mple/a?ed=1'])
+def test_ws_go_url_parse_failures_keep_original_path_and_ignore_early_data(registry, path):
+    cfg = {**BASE_CFG, 'net': 'ws', 'path': path}
+    result = parse_vmess(vmess_uri(cfg), registry).to_dict()
+    assert result['ws-opts'] == {'path': path, 'headers': {}}

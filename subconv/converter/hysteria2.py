@@ -20,6 +20,7 @@ from .util import (
     ParseError,
     normalize_url_userinfo,
     parse_optional_bool,
+    parse_query,
 )
 
 
@@ -56,12 +57,7 @@ def parse_hysteria2(line: str, registry: NameRegistry) -> Hysteria2Proxy:
     if INVALID_URL_ESCAPE.search(url.path) or INVALID_URL_ESCAPE.search(url.fragment):
         raise ParseError("hysteria2: invalid URL escape")
 
-    # Go's url.Query ignores individual malformed pairs, preserving valid ones.
-    valid_query = "&".join(
-        pair for pair in url.query.split("&")
-        if ";" not in pair and not INVALID_URL_ESCAPE.search(pair)
-    )
-    query_values = urlparse.parse_qs(valid_query, keep_blank_values=True)
+    query_values = parse_query(url.query)
     query = {key: values[0] for key, values in query_values.items()}
 
     kwargs: dict[str, object] = {

@@ -1,15 +1,22 @@
-import re
-import random
+import asyncio
 from typing import Any
 
-import yaml
 from urllib.parse import urlparse, urlencode
 
 from . import config
-from . import subscription
+from .converter.registry import NameRegistry
+from .filters import ambiguous_unicode_names, compile_group_filter, filter_names
+from .yaml_utils import dump_yaml
 
 
 ProxyMapping = dict[str, Any]
+
+# These mihomo rule types allow commas in their payload and have no options.
+# Their policy must remain the final field (rules/common.ParseRulePayload).
+_RULES_WITH_COMMA_PAYLOAD = {
+    "NOT", "OR", "AND", "SUB-RULE", "DOMAIN-REGEX",
+    "PROCESS-NAME-REGEX", "PROCESS-PATH-REGEX",
+}
 
 
 async def pack(
@@ -17,8 +24,8 @@ async def pack(
     urlstandalone: list[ProxyMapping] | None,
     urlstandby: list[str] | None,
     urlstandbystandalone: list[ProxyMapping] | None,
-    content: list[str] | None,
-    interval: str,
+    provider_names: list[str],
+    interval: int,
     domain: str,
     short: str | None,
     notproxyrule: str | None,
@@ -26,7 +33,6 @@ async def pack(
     template_name: str,
     template_config: config.TemplateConfig,
 ) -> str:
-    providerProxyNames = await subscription.mkListProxyNames(content)
     result: ProxyMapping = {}
 
     if short is None:
@@ -37,14 +43,24 @@ async def pack(
     proxiesName: list[str] | None = []
     proxiesStandbyName: list[str] | None = []
 
+    registry = NameRegistry()
+    for reserved in {"DIRECT", "REJECT", "REJECT-DROP", "PASS", "PASS-RULE", "GLOBAL", "COMPATIBLE", "🚀 节点选择"} | {
+        group.name for group in template_config.CUSTOM_PROXY_GROUP
+    }:
+        registry.register(reserved)
+
+    def unique_nodes(nodes):
+        for node in nodes or []:
+            yield {**node, "name": registry.register(node["name"])}
+
     if urlstandalone or urlstandbystandalone:
         if urlstandalone:
-            for i in urlstandalone:
+            for i in unique_nodes(urlstandalone):
                 proxies_list.append(i)
                 proxiesName.append(i["name"])
                 proxiesStandbyName.append(i["name"])
         if urlstandbystandalone:
-            for i in urlstandbystandalone:
+            for i in unique_nodes(urlstandbystandalone):
                 proxies_list.append(i)
                 proxiesStandbyName.append(i["name"])
     if len(proxies_list) == 0:
@@ -66,7 +82,7 @@ async def pack(
                         "subscription{}".format(u): {
                             "type": "http",
                             "url": url[u],
-                            "interval": int(interval),
+                            "interval": interval,
                             "path": "./sub/subscription{}.yaml".format(u),
                             "health-check": {
                                 "enable": True,
@@ -83,7 +99,7 @@ async def pack(
                         "subscription{}".format("sub" + str(u)): {
                             "type": "http",
                             "url": urlstandby[u],
-                            "interval": int(interval),
+                            "interval": interval,
                             "path": "./sub/subscription{}.yaml".format("sub" + str(u)),
                             "health-check": {
                                 "enable": True,
@@ -107,6 +123,7 @@ async def pack(
         "type": "select",
         "proxies": proxy_select_proxies,
     }
+    uncertain_provider_names = ambiguous_unicode_names(provider_names)
     for group in template_config.CUSTOM_PROXY_GROUP:
         if group.rule == False:
             proxy_select_proxies.append(group.name)
@@ -194,134 +211,95 @@ async def pack(
             or type_ == "fallback"
             or type_ == "url-test"
         ):
-            proxyGroup: ProxyMapping | None = {"name": group.name, "type": type_}
+            proxyGroup: ProxyMapping = {"name": group.name, "type": type_}
+            provider_ids = standby if group.manual else subscriptions
+            node_names = proxiesStandbyName if group.manual else proxiesName
             if regex is not None:
-                tmp = [regex]
-                if len(tmp) > 0:
-                    providerProxies: list[str] = []
-                    proxyGroupProxies: list[str] = []
-                    proxyGroup["filter"] = "|".join(tmp)
-                    if group.manual:
-                        if standby:
-                            for p in standby:
-                                if re.search(proxyGroup["filter"], p, re.I) is not None:
-                                    providerProxies.append(p)
-                                    break
-                            if len(providerProxies) > 0:
-                                proxyGroup["use"] = standby
-                        if proxiesStandbyName:
-                            for p in proxiesStandbyName:
-                                if re.search(proxyGroup["filter"], p, re.I) is not None:
-                                    proxyGroupProxies.append(p)
-                            if len(proxyGroupProxies) > 0:
-                                proxyGroup["proxies"] = proxyGroupProxies
-                    else:
-                        if subscriptions:
-                            for p in providerProxyNames:
-                                if re.search(proxyGroup["filter"], p, re.I) is not None:
-                                    providerProxies.append(p)
-                                    break
-                            if len(providerProxies) > 0:
-                                proxyGroup["use"] = subscriptions
-                        if proxiesName:
-                            for p in proxiesName:
-                                if re.search(proxyGroup["filter"], p, re.I) is not None:
-                                    proxyGroupProxies.append(p)
-                            if len(proxyGroupProxies) > 0:
-                                proxyGroup["proxies"] = proxyGroupProxies
-                    if len(providerProxies) + len(proxyGroupProxies) == 0:
-                        _remove_group_proxy(proxy_groups_list[0], group.name)
-                        proxyGroup = None
+                patterns, client_filter = compile_group_filter(regex)
+                # Explicit proxies are not filtered again by mihomo. Preserve
+                # SubConv's server-side matching semantics for these nodes.
+                node_names = filter_names(patterns, node_names or [])
+                # Only remote providers defer uncertain Unicode matching to the
+                # client's regexp2 engine, which actually filters provider use.
+                if any(not pattern.pattern.isascii() or r'\u' in pattern.pattern or r'\x' in pattern.pattern for pattern in patterns):
+                    provider_matches = bool(provider_names)
                 else:
-                    _remove_group_proxy(proxy_groups_list[0], group.name)
-                    proxyGroup = None
-                if proxyGroup is not None:
-                    if type_ == "load-balance":
-                        proxyGroup["strategy"] = "consistent-hashing"
-                        proxyGroup["url"] = template_config.TEST_URL
-                        proxyGroup["interval"] = 60
-                        proxyGroup["tolerance"] = 50
-                    elif type_ == "fallback":
-                        proxyGroup["url"] = template_config.TEST_URL
-                        proxyGroup["interval"] = 60
-                        proxyGroup["tolerance"] = 50
-                    elif type_ == "url-test":
-                        proxyGroup["url"] = template_config.TEST_URL
-                        proxyGroup["interval"] = 60
-                        proxyGroup["tolerance"] = 50
-            else:
-                if group.manual:
-                    if standby:
-                        proxyGroup["use"] = standby
-                    if proxiesStandbyName:
-                        proxyGroup["proxies"] = proxiesStandbyName
-                else:
-                    if subscriptions:
-                        proxyGroup["use"] = subscriptions
-                    if proxiesName:
-                        proxyGroup["proxies"] = proxiesName
-            if proxyGroup is not None:
-                proxy_groups_list.append(proxyGroup)
+                    provider_matches = any(name in uncertain_provider_names or pattern.search(name) for pattern in patterns for name in provider_names)
+                # Standby providers are loaded by the client; their names are unknown.
+                if not provider_matches and not (group.manual and urlstandby):
+                    provider_ids = None
+                proxyGroup["filter"] = client_filter
+            if not provider_ids and not node_names:
+                _remove_group_proxy(proxy_groups_list[0], group.name)
+                continue
+            if provider_ids:
+                proxyGroup["use"] = provider_ids
+            if node_names:
+                proxyGroup["proxies"] = node_names
+            if type_ != "select":
+                proxyGroup.update(url=template_config.TEST_URL, interval=60, tolerance=50)
+                if type_ == "load-balance":
+                    proxyGroup["strategy"] = "consistent-hashing"
+            proxy_groups_list.append(proxyGroup)
 
     proxyGroupAndProxyList = ["DIRECT", "REJECT"]
     proxyGroupAndProxyList.extend(str(i["name"]) for i in proxy_groups_list)
     if proxiesStandbyName is not None:
         proxyGroupAndProxyList.extend(proxiesStandbyName)
+    valid_proxy_names = set(proxyGroupAndProxyList)
     for proxygroup in proxy_groups_list:
         if "proxies" not in proxygroup:
             continue
         proxygroup["proxies"] = [
             proxy
             for proxy in _group_proxies(proxygroup)
-            if isinstance(proxy, str) and proxy in proxyGroupAndProxyList
+            if isinstance(proxy, str) and proxy in valid_proxy_names
         ]
 
     result.update(proxyGroups)
 
     rule_providers: dict[str, dict[str, ProxyMapping]] = {"rule-providers": {}}
     rule_provider_map = rule_providers["rule-providers"]
-    rule_map: dict[str, str] = {}
+    next_rule_suffix: dict[str, int] = {}
+    rules_list = [f"DOMAIN,{domain},DIRECT"]
     classical: ProxyMapping = {
         "type": "http",
         "behavior": "classical",
         "format": "text",
         "interval": 86400 * 7,
     }
-    for item in template_config.RULESET:
-        rule_url = item[1]
-        name = urlparse(rule_url).path.split("/")[-1].split(".")[0]
-        while name in rule_map:
-            name += str(random.randint(0, 9))
-        rule_map[name] = item[0]
+    for policy, rule_url in template_config.RULESET:
         if rule_url.startswith("[]"):
+            inline_rule = rule_url[2:]
+            if inline_rule in {"FINAL", "MATCH"}:
+                inline_rule = "MATCH"
+            parts = inline_rule.split(",")
+            options = []
+            if parts[0].strip().upper() not in _RULES_WITH_COMMA_PAYLOAD:
+                while len(parts) > 2 and parts[-1].strip() in {"no-resolve", "src"}:
+                    options.insert(0, parts.pop())
+            rules_list.append(",".join([*parts, policy, *options]))
             continue
+        base_name = urlparse(rule_url).path.rsplit("/", 1)[-1].split(".")[0] or "ruleset"
+        suffix = next_rule_suffix.get(base_name, 0)
+        name = f"{base_name}-{suffix}" if suffix else base_name
+        while name in rule_provider_map:
+            suffix += 1
+            name = f"{base_name}-{suffix}"
+        next_rule_suffix[base_name] = suffix + 1
         if notproxyrule is None:
             query_params = {"url": rule_url}
             if template_name != config.default_template_name():
                 query_params["template"] = template_name
             rule_url = "{}proxy?{}".format(base_url, urlencode(query_params))
-
-        rule_provider_map.update(
-            {name: {**classical, "path": "./rule/{}.txt".format(name), "url": rule_url}}
-        )
+        rule_provider_map[name] = {
+            **classical, "path": f"./rule/{name}.txt", "url": rule_url
+        }
+        rules_list.append(f"RULE-SET,{name},{policy}")
     result.update(rule_providers)
+    result["rules"] = rules_list
 
-    rules: dict[str, list[str]] = {"rules": []}
-    rules_list = rules["rules"]
-    rules_list.append(f"DOMAIN,{domain},DIRECT")
-    for k, v in rule_map.items():
-        if not k.startswith("[]"):
-            rules_list.append(f"RULE-SET,{k},{v}")
-        elif k[2:] != "FINAL" and k[2:] != "MATCH":
-            rules_list.append(f"{k[2:]},{v}")
-        else:
-            rules_list.append(f"MATCH,{v}")
-
-    result.update(rules)
-
-    yaml.SafeDumper.ignore_aliases = lambda self, data: True
-
-    return yaml.safe_dump(result, allow_unicode=True, sort_keys=False)
+    return await asyncio.to_thread(dump_yaml, result)
 
 
 def _group_proxies(group: ProxyMapping) -> list[str]:

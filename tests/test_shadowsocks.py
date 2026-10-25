@@ -69,6 +69,12 @@ def test_v2ray_plugin(registry):
     }
 
 
+def test_plugin_parameters_are_query_decoded_twice_and_keep_first_value(registry):
+    plugin = 'v2ray-plugin;mode=websocket;path=%2Fws%3Ftoken%3Dx;path=wrong'
+    line = 'ss://aes-128-gcm:pw@example.com:443?plugin=' + urllib.parse.quote(plugin, safe='')
+    assert parse_ss(line, registry).to_dict()['plugin-opts']['path'] == '/ws?token=x'
+
+
 def test_unknown_plugin_is_dropped(registry):
     line = "ss://aes-256-gcm:pw@ss.example.com:8388/?plugin=unknown-plugin%3Bfoo%3Dbar#UP"
     result = parse_ss(line, registry).to_dict()

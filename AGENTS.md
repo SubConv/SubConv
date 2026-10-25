@@ -23,7 +23,7 @@
 ## Verification
 
 - Converter tests live under `tests/` and run without network access. Install their optional dependencies with `uv sync --locked --group test`, then run `uv run --no-sync python -m pytest tests/`.
-- For backend changes, also run `python3 -m compileall subconv api.py` and any focused smoke script needed for the touched parser/route; the converter suite does not cover HTTP routes.
+- For backend changes, also run `uv run --no-sync python -m compileall subconv api.py` and any focused smoke script needed for the touched parser/route; include HTTP route tests when changing routes.
 - For frontend-only changes, the CI-equivalent check is `cd mainpage && bun install && bun run build`.
 - For docs-only changes, the CI-equivalent check is `cd docs && bun install && bun run build`.
 - If you touch packaging/build flow, also read the matching workflow under `.github/workflows/` and keep local verification aligned with it.
@@ -44,7 +44,16 @@
 - `DISALLOW_ROBOTS` is a typed boolean loaded through `pydantic-settings`; use YAML booleans like `true`/`false` in config files.
 - `/proxy` only fetches rule URLs present in the selected template’s `RULESET`; generated configs include `template=` when needed so whitelist checks use the same template.
 - `_split_sources()` in `subconv/app.py` treats `https://t.me/...` specially as standalone share links rather than remote subscription URLs.
-- `subconv/subscription.py` falls back to `ConvertsV2Ray()` on any exception while trying Clash YAML shape parsing; inside `ConvertsV2Ray`, per-line parsing should only skip malformed links by catching `ParseError`, not broad exceptions.
+- `subconv/subscription.py` accepts bounded Clash YAML or share-link subscriptions. Malformed links must fail the whole conversion with `ParseError`, never silently skip failed nodes. Direct links return 400, invalid upstream subscriptions return 502, and unexpected programming errors remain 500.
+- Keep parsed subscriptions as node dictionaries internally (`parse_nodes`); serialize only at response boundaries, never dump and reparse generated provider YAML just to collect names.
+- `subconv/upstream.py` validates every DNS address and redirect target, pins connections to checked addresses, and disables connection reuse across logical hosts sharing an IP. Private targets require `ALLOW_PRIVATE_NETWORKS=true`. Cookie state is scoped to one logical redirect chain. `subconv/http_body.py` enforces body limits during each decompression layer, before allocation; do not use unbounded HTTPX decoding for untrusted bodies.
+- Outer subscription Base64 decoding must validate the entire input (standard/raw Base64, CR/LF only); never ignore bytes after padding.
+- All Base64 helpers validate the alphabet and padding. Ordinary VLESS authorities must never be decoded by discarding punctuation. Query parsing follows Go's first-value semantics and preserves all repeated values when rebuilding paths.
+- `ProxyBudget` in `subconv/converter/util.py` limits each parsed subscription to 10,000 proxies and 10 MiB of expanded scalar fields across all protocols and Clash YAML. Mieru checks shared expansion and port count before allocating models. Serialize YAML in worker threads.
+- Outbound clients come from `upstream_client()`: race only checked TCP addresses under one connect deadline, retain Host/SNI, close losing connections and send one HTTP request. HTTPX 0.28's inherited transport adapter is wired to a pinned HTTPcore backend; keep its integration covered by transport tests.
+- `subconv/filters.py` validates the shared Python/regexp2 syntax subset at template load, normalizes named groups/references and splits backtick filters. Direct nodes must be matched server-side using SubConv's Python semantics; mihomo does not filter explicit proxies again. Preserve uncertain remote providers for final client filtering, never unmatched direct nodes.
+- YAML anchors, aliases and merge keys are supported through `subconv/yaml_utils.py`, with size/depth/expansion limits; never disable aliases globally.
+- The subscription loader locally treats on/off/yes/no as strings, following mihomo's untyped YAML mappings. Do not alter global PyYAML resolver tables.
 - Use mihomo docs as the config/protocol reference: https://wiki.metacubex.one
 - Align protocol config fields with mihomo config definitions: https://github.com/MetaCubeX/mihomo/tree/Meta/config
 - `static/` and frontend build output are not committed. Local backend UI serving depends on a manual `mainpage/dist` build.

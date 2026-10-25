@@ -7,7 +7,7 @@ from pydantic import Field
 
 from .models import MihomoBaseModel
 from .registry import NameRegistry
-from .util import ParseError, base64_raw_url_decode, url_safe
+from .util import ParseError, base64_raw_url_decode, first_query_values, url_safe
 
 
 class ShadowsocksRProxy(MihomoBaseModel):
@@ -29,7 +29,7 @@ class ShadowsocksRProxy(MihomoBaseModel):
 
 def parse_ssr(line: str, registry: NameRegistry) -> ShadowsocksRProxy:
     try:
-        if not line.startswith("ssr://"):
+        if line.partition("://")[0].lower() != "ssr":
             raise ParseError("ssr: invalid scheme")
 
         decoded = base64_raw_url_decode(url_safe(line[6:]))
@@ -41,7 +41,7 @@ def parse_ssr(line: str, registry: NameRegistry) -> ShadowsocksRProxy:
         if len(parts) != 6:
             raise ParseError("ssr: invalid server fields")
 
-        query = dict(urlparse.parse_qsl(url_safe(after)))
+        query = first_query_values(url_safe(after), strict=True)
 
         remarks = query.get("remarks", "")
         obfs_param = query.get("obfsparam")

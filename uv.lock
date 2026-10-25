@@ -378,6 +378,7 @@ version = "2.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "httpcore" },
     { name = "httpx" },
     { name = "pydantic-settings" },
     { name = "pyyaml" },
@@ -395,6 +396,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = "==0.162.0" },
+    { name = "httpcore", specifier = "==1.0.9" },
     { name = "httpx", specifier = "==0.28.1" },
     { name = "pydantic-settings", specifier = ">=2.16.1" },
     { name = "pyyaml", specifier = ">=6.0.3" },

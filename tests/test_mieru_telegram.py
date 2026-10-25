@@ -73,6 +73,20 @@ def test_mieru_missing_host_raises(registry):
         parse_mieru("mierus://?port=2027&protocol=TCP#x", registry)
 
 
+@pytest.mark.parametrize("password", ["x" * 700, "密" * 240])
+def test_mieru_rejects_repeated_fields_before_creating_models(registry, monkeypatch, password):
+    from subconv.converter import mieru
+
+    monkeypatch.setattr(mieru, "MAX_CONTENT_BYTES", 1024)
+
+    def unexpected_model(*args, **kwargs):
+        pytest.fail("Expansion must be checked before allocating per-port models")
+
+    monkeypatch.setattr(mieru.MieruProxy, "model_validate", unexpected_model)
+    with pytest.raises(ParseError, match="expanded nodes exceed size limit"):
+        parse_mieru(f"mierus://u:{password}@m.example?port=1&protocol=TCP&port=2&protocol=TCP", registry)
+
+
 # --- telegram ---
 
 
@@ -81,7 +95,7 @@ def test_tg_socks_link(registry):
     result = parse_tg(line, registry).to_dict()
     assert result == {
         "name": "MyTG",
-        "type": "socks",
+        "type": "socks5",
         "server": "tg.example.com",
         "port": 1080,
         "username": "u",
@@ -94,7 +108,7 @@ def test_tg_https_link(registry):
     result = parse_tg_https(line, registry).to_dict()
     assert result == {
         "name": "TGHTTPS",
-        "type": "socks",
+        "type": "socks5",
         "server": "tg.example.com",
         "port": 1080,
     }
@@ -128,3 +142,10 @@ def test_tg_invalid_port_raises(registry):
 def test_tg_missing_type_raises(registry):
     with pytest.raises(ParseError, match="missing proxy type"):
         parse_tg("tg://?server=a.example.com&port=1080", registry)
+
+
+@pytest.mark.parametrize('line', ['tg://proxy?server=tg.example.com&port=443&secret=abcdef', 'https://t.me/proxy?server=tg.example.com&port=443&secret=abcdef'])
+def test_unsupported_telegram_mtproto_is_rejected(registry, line):
+    parse = parse_tg if line.startswith('tg:') else parse_tg_https
+    with pytest.raises(ParseError, match='unsupported proxy type'):
+        parse(line, registry)

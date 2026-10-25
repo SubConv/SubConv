@@ -1,6 +1,12 @@
 # Proxy Groups
 Except for the `🚀 节点选择` group, all proxy-groups can be customized through the YAML files under `template/`. Proxy-groups are generated based on `CUSTOM_PROXY_GROUP` in the selected template file.  
 
+Group filters are checked when templates load. They use the shared Python/regexp2 syntax subset: literals, character classes, quantifiers, alternation, lookarounds and `i/m/s/x` flags. Named groups may use `(?<region>HK)` or `(?P<region>HK)`; output uses mihomo's form. Named references are normalized as well. Numeric references, conditional groups, possessive quantifiers, nested/subtracted classes and Python-only flags or `\N`/`\U` escapes are rejected at startup. Quantifiers require an explicit minimum and counts no greater than 2,147,483,647. Group names must be ASCII identifiers.
+
+Separate filters with a backtick, for example ``HK`JP``. Each filter is case-insensitive by default and applies in the listed order. SubConv filters direct share-link nodes on the server using Python matching semantics, including Unicode; only matching nodes are written to the group's explicit `proxies`. `manual: false` considers primary nodes, while `manual: true` also includes standby nodes. Groups with neither providers nor matching nodes are omitted.
+
+Remote providers use the normalized `filter` in mihomo's regexp2 engine. Because Unicode tables and case folding can differ, SubConv conservatively retains uncertain remote providers for client filtering. This can retain an empty remote group; it never adds unmatched direct nodes.
+
 ## customize proxy-groups
 Here is an example of `custom_proxy_group` (from `template/general.yaml`):
 ```yaml
@@ -126,6 +132,6 @@ CUSTOM_PROXY_GROUP:
     ```
    Here are other possible fields:
    - `"rule"`: whether this is a rule group (a rule group is a group used for routing, such as `📲 电报消息`, rather than `♻️ 自动选择` which is used for node selection. **Default value is `true`**  
-   - `"prior": **works only if `"rule"` is `false`, and is required**. Possible values: `"DIRECT"`, `"PROXY"`, `"REJECT"`. Indicates the default selection of this proxy-group. `"PROXY"` means the default selection is `"🚀 节点选择"  
+   - `"prior"`: **Only applies when `"rule"` is `true` and `"type"` is `select`**. Choices are `"DIRECT"`, `"PROXY"`, and `"REJECT"`, with `"PROXY"` as the default. It selects the first choice in the group; `"PROXY"` means `"🚀 节点选择"`.
    - `"regex"`: **works only if `"rule"` is `false`**. A regular expression used to match the node name. If a match is found, the node will be added to this proxy-group. If this field is not specified, all nodes will be added to this proxy-group.  
     - `"manual"`: **works only if `"rule"` is `false`**. Possible values are `true` or `false`. If `true`, this proxy-group will contain standby nodes. If `false`, this proxy-group will not contain backup nodes. **Default value is `false`**.  

@@ -13,7 +13,7 @@ from pydantic import Field
 
 from .models import MihomoBaseModel
 from .registry import NameRegistry
-from .util import ParseError, parse_optional_bool
+from .util import ParseError, first_query_values, parse_optional_bool
 
 
 class HysteriaProxy(MihomoBaseModel):
@@ -39,7 +39,7 @@ def parse_hysteria(line: str, registry: NameRegistry) -> HysteriaProxy:
     if not url.hostname or not url.port:
         raise ParseError("hysteria: missing host or port")
 
-    query = dict(urlparse.parse_qsl(url.query))
+    query = first_query_values(url.query)
 
     up = query.get("up") or query.get("upmbps", "")
     down = query.get("down") or query.get("downmbps", "")

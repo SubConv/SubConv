@@ -8,6 +8,19 @@ from subconv.converter.vless import parse_vless
 UUID = "b831381d-6324-4d53-ad4f-8cda48b30811"
 
 
+@pytest.mark.parametrize('host,port', [('cn.xyz', 443), ('cc.example', 22)])
+def test_plain_host_is_not_guessed_as_permissive_base64(registry, host, port):
+    result = parse_vless(f'vless://{UUID}@{host}:{port}', registry).to_dict()
+    assert result['server'] == host and result['port'] == port
+
+
+def test_excessively_deep_xhttp_extra_is_ignored_like_mihomo(registry):
+    from urllib.parse import quote
+    extra = '{"ignored":' + '[' * 10000 + '0' + ']' * 10000 + '}'
+    result = parse_vless(f'vless://{UUID}@example.com:443?type=xhttp&extra=' + quote(extra), registry).to_dict()
+    assert result['xhttp-opts'] == {}
+
+
 def test_ws_tls_full_config(registry):
     line = (
         f"vless://{UUID}@vless.example.com:443?security=tls&encryption=none"
@@ -130,3 +143,10 @@ def test_invalid_port_raises(registry):
 def test_invalid_ws_early_data_raises(registry):
     with pytest.raises(ParseError, match="bad WebSocket max early data"):
         parse_vless("vless://u-1@v.example.com:443?type=ws&ed=abc#BadEd", registry)
+
+
+@pytest.mark.parametrize('value', ['1_0', ' 10', '١٠', '9223372036854775808', '-9223372036854775809'])
+def test_ws_early_data_uses_go_integer_syntax_and_range(registry, value):
+    from urllib.parse import urlencode
+    with pytest.raises(ParseError, match='bad WebSocket max early data'):
+        parse_vless('vless://u@example.com:443?' + urlencode({'type': 'ws', 'ed': value}), registry)

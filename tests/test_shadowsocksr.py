@@ -16,6 +16,11 @@ def ssr_uri(inner: str) -> str:
     return "ssr://" + b64url(inner)
 
 
+def test_uppercase_scheme_is_accepted(registry):
+    line = ssr_uri('example.com:443:origin:aes-128-gcm:plain:' + b64url('pw') + '/?remarks=' + b64url('Node'))
+    assert parse_ssr(line.replace('ssr://', 'SSR://', 1), registry).to_dict()['name'] == 'Node'
+
+
 def test_full_ssr_link(registry):
     inner = (
         "ssr.example.com:8388:auth_aes128_md5:aes-256-cfb:tls1.2_ticket_auth:"
@@ -71,4 +76,11 @@ def test_missing_query_separator_raises(registry):
 def test_wrong_field_count_raises(registry):
     inner = "only:three:fields/?remarks=" + b64url("X")
     with pytest.raises(ParseError, match="invalid server fields"):
+        parse_ssr(ssr_uri(inner), registry)
+
+
+@pytest.mark.parametrize('bad', ['bad=%GG', 'bad=x;y'])
+def test_ssr_rejects_any_invalid_query_pair(registry, bad):
+    inner = 'example.com:443:origin:aes-128-gcm:plain:cHc/?remarks=bg&' + bad
+    with pytest.raises(ParseError):
         parse_ssr(ssr_uri(inner), registry)

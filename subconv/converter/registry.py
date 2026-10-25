@@ -12,6 +12,7 @@ class NameRegistry:
 
     def __init__(self) -> None:
         self._names: dict[str, int] = {}
+        self._used: set[str] = set()
 
     def register(self, name: str) -> str:
         """Register a proxy name and return a unique version.
@@ -19,10 +20,11 @@ class NameRegistry:
         First occurrence returns the name unchanged.
         Subsequent occurrences return "{name}-{index:02d}".
         """
-        index = self._names.get(name)
-        if index is None:
-            self._names[name] = 0
-            return name
-        index += 1
+        candidate = name
+        index = self._names.get(name, 0)
+        while candidate in self._used:
+            index += 1
+            candidate = f"{name}-{index:02d}"
         self._names[name] = index
-        return f"{name}-{index:02d}"
+        self._used.add(candidate)
+        return candidate

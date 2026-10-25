@@ -7,6 +7,8 @@ on:
       - 'subconv/**'
       - 'api.py'
       - 'tests/**'
+      - 'template/**'
+      - 'config.yaml.example'
       - 'pyproject.toml'
       - 'uv.lock'
       - '.github/workflows/test-backend.yml'
@@ -15,6 +17,8 @@ on:
       - 'subconv/**'
       - 'api.py'
       - 'tests/**'
+      - 'template/**'
+      - 'config.yaml.example'
       - 'pyproject.toml'
       - 'uv.lock'
       - '.github/workflows/test-backend.yml'
@@ -40,5 +44,5 @@ jobs:
         run: uv sync --locked --group test
       - name: Check Python sources
         run: uv run --no-sync python -m compileall -q subconv api.py
-      - name: Test converter
+      - name: Test backend
         run: uv run --no-sync python -m pytest tests/ -q

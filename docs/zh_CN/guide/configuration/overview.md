@@ -15,6 +15,8 @@
 - `DEFAULT_TEMPLATE`：当 `/sub` 或 `/proxy` 不带 `template` 查询参数时使用的模板
 - `DISALLOW_ROBOTS`：是否让 `/robots.txt` 返回 `Disallow: /`（默认值为 `true`）
 
+- `ALLOW_PRIVATE_NETWORKS`：是否允许订阅和规则访问内网（默认 `false`）；重定向目标和全部 DNS 解析地址都会检查。仅在部署确实需要内部资源时开启。出站请求直接连接，不使用代理环境变量。
+
 示例 `config.yaml`：
 
 ```yaml
@@ -22,6 +24,7 @@ HOST: 0.0.0.0
 PORT: 8080
 DEFAULT_TEMPLATE: zju
 DISALLOW_ROBOTS: true
+ALLOW_PRIVATE_NETWORKS: false
 ```
 
 ## 模板文件项

@@ -4,3 +4,5 @@ HOST: 0.0.0.0
 PORT: 8080
 DEFAULT_TEMPLATE: zju
 DISALLOW_ROBOTS: true
+# Only enable on trusted deployments that need private-network subscriptions.
+ALLOW_PRIVATE_NETWORKS: false

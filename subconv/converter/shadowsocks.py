@@ -7,7 +7,7 @@ from pydantic import Field
 
 from .models import MihomoBaseModel
 from .registry import NameRegistry
-from .util import ParseError, base64_raw_std_decode, base64_raw_url_decode
+from .util import ParseError, base64_raw_std_decode, base64_raw_url_decode, first_query_values
 
 
 class ShadowsocksProxy(MihomoBaseModel):
@@ -30,7 +30,7 @@ class ShadowsocksProxy(MihomoBaseModel):
 
 def parse_ss(line: str, registry: NameRegistry) -> ShadowsocksProxy:
     url = _parse_ss_url(line)
-    query = dict(urlparse.parse_qsl(url.query))
+    query = first_query_values(url.query)
     cipher, password = _parse_userinfo(url)
     server = url.hostname
     if server is None:
@@ -111,16 +111,10 @@ def _parse_userinfo(url: urlparse.ParseResult) -> tuple[str, str]:
 
 
 def _parse_plugin(plugin: str) -> tuple[str, dict[str, str | bool] | None] | None:
-    segments = plugin.split(";")
-    if not segments:
+    if ";" not in plugin:
         return None
-
-    plugin_name = segments[0]
-    options: dict[str, str] = {}
-    for segment in segments[1:]:
-        key, separator, value = segment.partition("=")
-        if separator:
-            options[key] = value
+    options = first_query_values("pluginName=" + plugin.replace(";", "&"))
+    plugin_name = options.get("pluginName", "")
 
     if "obfs" in plugin_name:
         obfs_plugin_opts: dict[str, str | bool] = {}

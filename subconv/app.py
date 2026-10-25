@@ -1,19 +1,24 @@
+import asyncio
 import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import httpx
+from anyio import CancelScope
 from fastapi import FastAPI, HTTPException
 from fastapi.requests import Request
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
+from starlette.background import BackgroundTask
 from urllib.parse import urlencode
 
 from . import config
 from . import packer
 from . import subscription
 from .converter import ConvertsV2Ray
+from .converter.util import ParseError
+from .upstream import fetch_upstream, open_upstream, iter_limited, upstream_client
 
 
 @asynccontextmanager
@@ -23,6 +28,18 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+class _ProxyStreamingResponse(StreamingResponse):
+    """Close upstream resources even if sending headers fails before iteration."""
+
+    async def __call__(self, scope, receive, send):
+        cleanup, self.background = self.background, None
+        try:
+            await super().__call__(scope, receive, send)
+        finally:
+            if cleanup is not None:
+                await cleanup()
 
 STATIC_DIR = Path("mainpage/dist")
 if STATIC_DIR.is_dir():
@@ -61,16 +78,21 @@ async def provider(request: Request):
             status_code=400, detail="Missing required query parameter: url"
         )
 
-    async with httpx.AsyncClient(follow_redirects=True) as client:
+    async with upstream_client() as client:
         resp = await _fetch_remote_response(client, url, "v2rayn")
-        result = await subscription.parseSubs(resp.text)
+        result = await asyncio.to_thread(subscription.dump_proxies, await _parse_subscription(resp.text))
     return Response(content=result, headers=headers)
 
 
 @app.get("/sub")
 async def sub(request: Request):
     args = request.query_params
-    interval = args.get("interval", "1800")
+    try:
+        interval = int(args.get("interval", "1800"))
+        if not 1 <= interval <= 2**31 - 1:
+            raise ValueError
+    except ValueError as exc:
+        raise HTTPException(400, "interval must be an integer between 1 and 2147483647") from exc
     short = args.get("short")
     notproxyrule = args.get("npr")
     template_name = _resolve_template_name(args.get("template"))
@@ -83,6 +105,8 @@ async def sub(request: Request):
         )
 
     url, urlstandalone_raw = _split_sources(url_param)
+    if not url and not urlstandalone_raw:
+        raise HTTPException(400, "At least one primary subscription or share link is required")
 
     urlstandby_param = args.get("urlstandby")
     urlstandby: list[str] | None = None
@@ -91,23 +115,24 @@ async def sub(request: Request):
         urlstandby, urlstandbystandalone_raw = _split_sources(urlstandby_param)
 
     urlstandalone = (
-        await ConvertsV2Ray(urlstandalone_raw) if urlstandalone_raw else None
+        await _parse_links(urlstandalone_raw) if urlstandalone_raw else None
     )
     urlstandbystandalone = (
-        await ConvertsV2Ray(urlstandbystandalone_raw)
+        await _parse_links(urlstandbystandalone_raw)
         if urlstandbystandalone_raw
         else None
     )
 
     user_agent = request.headers.get("User-Agent", "v2rayn")
 
-    async with httpx.AsyncClient(follow_redirects=True) as client:
+    async with upstream_client() as client:
         headers = {"Content-Type": "text/yaml;charset=utf-8"}
-        content: list[str] | None = []
+        provider_names: list[str] = []
         if url is not None:
             for i in range(len(url)):
                 resp = await _fetch_remote_response(client, url[i], user_agent)
-                content.append(await subscription.parseSubs(resp.text))
+                nodes = await _parse_subscription(resp.text, i + 1)
+                provider_names.extend(node["name"] for node in nodes)
                 if len(url) == 1:
                     original_headers = resp.headers
                     if "subscription-userinfo" in original_headers:
@@ -121,8 +146,6 @@ async def sub(request: Request):
                 url[i] = "{}provider?{}".format(
                     str(request.base_url), urlencode({"url": url[i]})
                 )
-    if content is not None and len(content) == 0:
-        content = None
     if urlstandby:
         for i in range(len(urlstandby)):
             urlstandby[i] = "{}provider?{}".format(
@@ -143,7 +166,7 @@ async def sub(request: Request):
         urlstandalone=urlstandalone,
         urlstandby=urlstandby,
         urlstandbystandalone=urlstandbystandalone,
-        content=content,
+        provider_names=provider_names,
         interval=interval,
         domain=domain,
         short=short,
@@ -168,31 +191,38 @@ async def proxy(request: Request, url: str):
         raise HTTPException(status_code=403, detail="Forbidden: URL not in whitelist")
 
     user_agent = request.headers.get("User-Agent", "v2rayn")
-    client = httpx.AsyncClient()
-    response = await client.send(
-        client.build_request("GET", url, headers={"User-Agent": user_agent}),
-        stream=True,
-    )
+    client = upstream_client()
+    response = None
 
-    if response.status_code < 200 or response.status_code >= 400:
-        body = await response.aread()
-        await response.aclose()
-        await client.aclose()
-        raise HTTPException(
-            status_code=response.status_code,
-            detail=body.decode("utf-8", errors="ignore"),
-        )
+    async def close_resources():
+        # Starlette cancels the stream when its downstream client disconnects.
+        # Shield cleanup so cancellation cannot interrupt socket closure.
+        with CancelScope(shield=True):
+            try:
+                if response is not None:
+                    await response.aclose()
+            finally:
+                await client.aclose()
+
+    try:
+        response = await open_upstream(client, url, user_agent)
+    except BaseException:
+        await close_resources()
+        raise
 
     async def stream_body():
         try:
-            async for chunk in response.aiter_bytes():
-                yield chunk
+            async with asyncio.timeout(30):
+                async for chunk in iter_limited(response):
+                    yield chunk
         finally:
-            await response.aclose()
-            await client.aclose()
+            await close_resources()
 
-    content_type = response.headers.get("Content-Type")
-    return StreamingResponse(stream_body(), media_type=content_type)
+    return _ProxyStreamingResponse(
+        stream_body(),
+        media_type=response.headers.get("Content-Type"),
+        background=BackgroundTask(close_resources),
+    )
 
 
 @app.get("/{path:path}")
@@ -251,31 +281,21 @@ def _resolve_static_path(path: str) -> Path | None:
     return requested_path
 
 
-def _validate_remote_url(url: str) -> str:
+async def _parse_links(content: str):
     try:
-        parsed = httpx.URL(url)
-    except httpx.InvalidURL as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid upstream URL: {url}") from exc
+        return await ConvertsV2Ray(content)
+    except ParseError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
-    if parsed.scheme not in {"http", "https"} or parsed.host is None:
-        raise HTTPException(status_code=400, detail=f"Invalid upstream URL: {url}")
 
-    return str(parsed)
+async def _parse_subscription(content: str, source: int = 1):
+    try:
+        return await subscription.parse_nodes(content)
+    except ParseError as exc:
+        raise HTTPException(502, f"Subscription {source}: {exc}") from exc
 
 
 async def _fetch_remote_response(
     client: httpx.AsyncClient, url: str, user_agent: str
 ) -> httpx.Response:
-    try:
-        resp = await client.get(
-            _validate_remote_url(url), headers={"User-Agent": user_agent}
-        )
-    except httpx.RequestError as exc:
-        raise HTTPException(
-            status_code=502, detail=f"Failed to fetch upstream URL: {exc}"
-        ) from exc
-
-    if resp.status_code < 200 or resp.status_code >= 400:
-        raise HTTPException(status_code=resp.status_code, detail=resp.text)
-
-    return resp
+    return await fetch_upstream(client, url, user_agent)

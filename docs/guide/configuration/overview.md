@@ -15,6 +15,8 @@ If you are running from a source checkout, put your changes in `config.yaml`. If
 - `DEFAULT_TEMPLATE`: the template used when `/sub` or `/proxy` omits the `template` query parameter
 - `DISALLOW_ROBOTS`: whether `/robots.txt` should return `Disallow: /` (defaults to `true`)
 
+- `ALLOW_PRIVATE_NETWORKS`: allow subscriptions and rules to access private networks (defaults to `false`); redirect targets and all DNS addresses are checked. Enable only for deployments that need internal resources. Outbound requests connect directly, ignoring proxy environment variables.
+
 Example `config.yaml`:
 
 ```yaml
@@ -22,6 +24,7 @@ HOST: 0.0.0.0
 PORT: 8080
 DEFAULT_TEMPLATE: zju
 DISALLOW_ROBOTS: true
+ALLOW_PRIVATE_NETWORKS: false
 ```
 
 ## Template File Items

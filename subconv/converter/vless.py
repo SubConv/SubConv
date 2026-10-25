@@ -25,7 +25,8 @@ from .registry import NameRegistry
 from .util import (
     ParseError,
     base64_raw_std_decode,
-    base64_raw_url_decode,
+    parse_go_int,
+    parse_query,
     parse_optional_bool,
     rand_user_agent,
 )
@@ -69,7 +70,7 @@ def parse_vless(line: str, registry: NameRegistry) -> VlessProxy:
     url = urlparse.urlparse(line)
     url = _decode_vless_host(url)
 
-    query = urlparse.parse_qs(url.query, keep_blank_values=True)
+    query = parse_query(url.query)
     proxy = handle_v_share_link(url, registry, "vless", query)
 
     flow = _query_first(query, "flow")
@@ -188,7 +189,7 @@ def handle_v_share_link(
         early_data = _query_first(query, "ed")
         if early_data:
             try:
-                max_early_data = int(early_data)
+                max_early_data = parse_go_int(early_data)
             except ValueError as exc:
                 raise ParseError(f"bad WebSocket max early data size: {exc}") from exc
             if network == "ws":
@@ -230,7 +231,7 @@ def handle_v_share_link(
                     parse_float=_parse_finite_json_number,
                     parse_constant=_parse_finite_json_number,
                 )
-            except ValueError:
+            except (ValueError, RecursionError):
                 extra_map = None
             if isinstance(extra_map, dict):
                 extra_opts = _parse_xhttp_extra(extra_map)
@@ -253,21 +254,13 @@ def _decode_vless_host(url: urlparse.ParseResult) -> urlparse.ParseResult:
     if "@" in hostpart:
         userinfo, hostpart = hostpart.rsplit("@", 1)
 
-    decoded_host = _try_decode_base64(hostpart)
-    if decoded_host is None:
+    try:
+        decoded_host = base64_raw_std_decode(hostpart)
+    except (binascii.Error, UnicodeDecodeError, ValueError):
         return url
 
     netloc = f"{userinfo}@{decoded_host}" if userinfo else decoded_host
     return url._replace(netloc=netloc)
-
-
-def _try_decode_base64(value: str) -> str | None:
-    for decoder in (base64_raw_std_decode, base64_raw_url_decode):
-        try:
-            return decoder(value)
-        except (binascii.Error, UnicodeDecodeError, ValueError):
-            continue
-    return None
 
 
 def _query_first(query: dict[str, list[str]], key: str) -> str:

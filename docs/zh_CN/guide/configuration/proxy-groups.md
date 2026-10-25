@@ -1,6 +1,12 @@
 # Proxy Groups
 除了 `🚀 节点选择` 组为硬编码以外，其他 proxy-groups 都可以通过 `template/` 目录下的 YAML 模板文件进行自定义。proxy-groups 根据当前所选模板中的 `CUSTOM_PROXY_GROUP` 生成。
 
+模板加载时会校验分组正则。支持 Python/regexp2 的公共语法子集：字面字符、字符类、量词、分支、前后向断言及 `i/m/s/x` 标志。命名组可写成 `(?<region>HK)` 或 `(?P<region>HK)`，输出统一为 mihomo 的形式；命名反引用也会规范化。数字反引用、条件组、占有量词、嵌套或相减字符类、Python 专有标志以及 `\N`/`\U` 转义会在启动时被拒绝。量词必须显式写出下界，计数不能超过 2,147,483,647；命名组名称须为 ASCII 标识符。
+
+用反引号分隔多个 filter，例如 ``HK`JP``；每段默认忽略大小写，并按列出的顺序应用。直接分享节点由 SubConv 在服务端按 Python 的匹配语义筛选，Unicode 名称也必须匹配，才会写入分组的显式 `proxies`。`manual: false` 只考虑主节点，`manual: true` 同时考虑备用节点。没有 provider 且没有匹配节点的分组会被省略。
+
+远程 provider 由 mihomo 的 regexp2 引擎执行规范化后的 `filter`。由于 Unicode 表和大小写折叠可能不同，SubConv 会保守保留不确定的远程 provider，交由客户端筛选。这可能保留一个最终为空的远程分组，但不会将不匹配的直接节点加入分组。
+
 ## 自定义 proxy-groups
 下面是一个有效的 `CUSTOM_PROXY_GROUP` 的例子（来自 `template/general.yaml`）：  
 ```yaml
@@ -126,6 +132,6 @@ CUSTOM_PROXY_GROUP:
     ```
    其他字段包括：
     - `"rule"`: 表示这是否是一个规则组（规则组指的是类似 `📲 电报消息` 这样用于分流的组，而非 `♻️ 自动选择` 等用于选择节点的组。**默认值为`true`**  
-    - `"prior"`: **仅当`"rule"`字段为`false`时有效，且必填**。可选值：`"DIRECT"`、`"PROXY"`、`"REJECT"`。表示这个 proxy-group 的默认选择。其中`"PROXY"`表示默认选择`"🚀 节点选择"  
+    - `"prior"`: **仅当 `"rule"` 为 `true` 且 `"type"` 为 `select` 时有效**。可选值为 `"DIRECT"`、`"PROXY"`、`"REJECT"`，默认 `"PROXY"`。表示分组的默认选择，其中 `"PROXY"` 对应 `"🚀 节点选择"`。
     - `"regex"`: **仅当`"rule"`字段为`false`时有效**。一个正则表达式，用于匹配节点名称。如果匹配成功，则将节点加入到这个 proxy-group 中。如果不指定这个字段，则所有节点都会被加入到这个 proxy-group 中。  
     - `"manual"`: **仅当`"rule"`字段为`false`时有效**。可选值为`true`或`false`。当值为`true`时，这个 proxy-group 会包含备用节点。当值为`false`时，这个 proxy-group 不会包含备用节点。**默认值为`false`**。  

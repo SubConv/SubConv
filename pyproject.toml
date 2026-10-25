@@ -5,6 +5,7 @@ requires-python = ">=3.13"
 dependencies = [
     "fastapi==0.162.0",
     "httpx==0.28.1",
+    "httpcore==1.0.9",
     "pydantic-settings>=2.16.1",
     "pyyaml>=6.0.3",
     "uvicorn==0.54.0",

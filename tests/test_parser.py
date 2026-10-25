@@ -10,6 +10,7 @@ import base64
 import pytest
 
 from subconv.converter import ConvertsV2Ray
+from subconv.converter.util import ParseError
 
 MIXED_SUBSCRIPTION = "\n".join(
     [
@@ -17,8 +18,6 @@ MIXED_SUBSCRIPTION = "\n".join(
         "trojan://pw@t.example.com:443#Dup",
         "vless://u-1@v.example.com:80#Solo",
         "this is not a link",
-        "ss://bad",
-        "unknown://x@y:1#Z",
     ]
 )
 
@@ -27,7 +26,7 @@ def convert(content):
     return asyncio.run(ConvertsV2Ray(content))
 
 
-def test_mixed_subscription_parses_valid_and_skips_invalid():
+def test_mixed_subscription_parses_nodes_and_ignores_annotations():
     result = convert(MIXED_SUBSCRIPTION)
     assert [p["name"] for p in result] == ["Dup", "Dup-01", "Solo"]
     assert result[0]["type"] == "trojan"
@@ -84,7 +83,7 @@ def test_all_supported_schemes_dispatch():
         "anytls",
         "socks5",
         "http",
-        "socks",
+        "socks5",
         "mieru",
     ]
 
@@ -92,7 +91,7 @@ def test_all_supported_schemes_dispatch():
 def test_https_tme_link_routes_to_telegram_parser():
     result = convert("https://t.me/socks?server=tg.example.com&port=1080&remark=T")
     assert result == [
-        {"name": "T", "type": "socks", "server": "tg.example.com", "port": 1080}
+        {"name": "T", "type": "socks5", "server": "tg.example.com", "port": 1080}
     ]
 
 
@@ -110,6 +109,46 @@ def test_mieru_link_expands_to_multiple_proxies():
     assert result[1]["port"] == 2028
 
 
+@pytest.mark.parametrize('line,key,expected', [
+    ('trojan://pw@example.com:443?allowInsecure=0&allowInsecure=1', 'skip-cert-verify', False),
+    ('anytls://pw@example.com:443?sni=one&sni=two', 'sni', 'one'),
+    ('tuic://token@example.com:443?sni=one&sni=two', 'sni', 'one'),
+    ('hysteria://example.com:443?insecure=0&insecure=1', 'skip-cert-verify', False),
+    ('ss://aes-128-gcm:pw@example.com:443?uot=1&uot=0', 'udp-over-tcp', True),
+])
+def test_duplicate_queries_use_mihomo_first_value(line, key, expected):
+    assert convert(line)[0][key] == expected
+
+
+def test_node_limit_applies_to_ordinary_links_before_parsing_next_node(monkeypatch):
+    from subconv.converter import parser
+    monkeypatch.setattr(parser, 'MAX_PROXY_NODES', 2)
+    assert len(convert('http://a:1#n\n' * 2)) == 2
+    with pytest.raises(ParseError, match='Line 3'):
+        convert('http://a:1#n\n' * 3)
+
+
+def test_expansion_limit_covers_ordinary_protocol_fields(monkeypatch):
+    from subconv.converter import parser
+    monkeypatch.setattr(parser, 'MAX_CONTENT_BYTES', 180)
+    line = 'anytls://' + 'x' * 70 + '@a:1#n'
+    assert len(line.encode()) < 180
+    with pytest.raises(ParseError):
+        convert(line)
+
+
+def test_mieru_expansion_budget_spans_subscription_links(monkeypatch):
+    from subconv.converter import parser, mieru
+
+    monkeypatch.setattr(parser, "MAX_CONTENT_BYTES", 2000)
+    monkeypatch.setattr(mieru, "MAX_CONTENT_BYTES", 2000)
+    line = f"mierus://u:{'x' * 600}@m.example?port=1&protocol=TCP&port=2&protocol=TCP"
+    assert len((line + "\n" + line).encode()) < 2000
+    assert len(convert(line)) == 2
+    with pytest.raises(ParseError, match="Line 2"):
+        convert(line + "\n" + line)
+
+
 def test_ssr_link_dispatches():
     def b64url(text: str) -> str:
         return base64.urlsafe_b64encode(text.encode()).decode().rstrip("=")
@@ -120,13 +159,14 @@ def test_ssr_link_dispatches():
     assert result[0]["name"] == "R"
 
 
-def test_malformed_realm_line_does_not_discard_valid_nodes():
+def test_malformed_realm_line_rejects_subscription():
     lines = "\n".join([
         "hy2+realm://bad%GG@realm.example.com/room#Bad",
         "hy2+realm://token@realm.example.com/room?auth=password#Realm",
         "trojan://pw@t.example.com:443#Trojan",
     ])
-    assert [node["name"] for node in convert(lines)] == ["Realm", "Trojan"]
+    with pytest.raises(ParseError, match=r"Line 1 \(hy2\+realm\)"):
+        convert(lines)
 
 
 def test_unexpected_parser_errors_are_not_silenced(monkeypatch):
@@ -138,3 +178,56 @@ def test_unexpected_parser_errors_are_not_silenced(monkeypatch):
     monkeypatch.setitem(parser._DISPATCH, "trojan", broken_parser)
     with pytest.raises(RuntimeError, match="parser defect"):
         convert("trojan://pw@t.example.com:443#Trojan")
+
+
+@pytest.mark.parametrize("bad", [
+    "trojan://secret@a.example:bad", "tuic://secret@a.example:bad",
+    "hysteria://a.example:bad", "vless://secret@[bad", "https://[bad",
+    "ss://bad", "unknown://secret@a.example:443",
+    "mierus://m.example?port=bad&protocol=TCP&port=443&protocol=TCP",
+])
+def test_invalid_link_rejects_entire_subscription_without_leaking_credentials(bad):
+    with pytest.raises(ParseError, match="Line 2") as error:
+        convert("trojan://pw@a.example:443#Good\n" + bad)
+    assert "secret" not in str(error.value)
+
+
+@pytest.mark.parametrize('wrapped', [False, True])
+def test_metadata_comments_with_urls_are_ignored(wrapped):
+    content = '#profile-web-page-url: https://provider.example/\n  # note: trojan://ignored\n  trojan://pw@example.com:443#HK'
+    if wrapped:
+        content = base64.b64encode(content.encode()).decode()
+    assert [node['name'] for node in convert(content)] == ['HK']
+
+
+@pytest.mark.parametrize('bad', [
+    'trojan:/secret@example.com:443', 'trojan:secret', 'vmess:secret',
+    'https:/secret', 'unknown:/secret', 'trojan//secret', 'vmess/secret',
+])
+def test_missing_link_delimiter_rejects_whole_subscription(bad):
+    with pytest.raises(ParseError, match='Line 2') as error:
+        convert('trojan://pw@example.com:443#good\n' + bad)
+    assert 'secret' not in str(error.value)
+
+
+@pytest.mark.parametrize('ending', ['unknown://secret', 'trojan:/secret@example.com:443', 'trojan://secret@example.com:bad'])
+def test_base64_padding_cannot_hide_bad_tail(ending):
+    encoded = base64.b64encode(b'trojan://pw@example.com:443#HKx').decode()
+    assert encoded.endswith('=')
+    with pytest.raises(ParseError):
+        convert(encoded + '\n' + ending)
+
+
+@pytest.mark.parametrize('padded', [False, True])
+@pytest.mark.parametrize('newlines', [False, True])
+def test_standard_raw_and_crlf_base64_are_supported(padded, newlines):
+    raw = 'trojan://pw@example.com:443#HKx'
+    encoded = base64.b64encode(raw.encode()).decode()
+    if not padded: encoded = encoded.rstrip('=')
+    if newlines: encoded = '\r\n'.join(encoded[i:i + 7] for i in range(0, len(encoded), 7))
+    assert convert(encoded) == convert(raw)
+
+
+def test_base64_cannot_ignore_non_alphabet_bytes():
+    encoded = base64.b64encode(b'trojan://pw@example.com:443#HKx').decode()
+    with pytest.raises(ParseError): convert(encoded[:8] + '!' + encoded[8:])
