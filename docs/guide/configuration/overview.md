@@ -41,18 +41,17 @@ ALLOW_PRIVATE_NETWORKS: false
         enable: true
         listen: 0.0.0.0:1053
         default-nameserver:
-        - 223.5.5.5
+        - 119.29.29.29
         - 8.8.8.8
         - 1.1.1.1
         proxy-server-nameserver:
-        - https://dns.alidns.com/dns-query
+        - https://doh.pub/dns-query
         nameserver-policy:
           geosite:gfw,geolocation-!cn:
             - https://1.1.1.1/dns-query#🚀 节点选择
             - https://1.0.0.1/dns-query#🚀 节点选择
             - https://8.8.8.8/dns-query#🚀 节点选择
         nameserver:
-        - https://dns.alidns.com/dns-query
         - https://doh.pub/dns-query
         - https://8.8.8.8/dns-query#🚀 节点选择
         fallback:
