@@ -1,5 +1,15 @@
 # Changelog
 
+## [v4.0.1] - 2026-10-31
+
+### Fixes
+
+- Replace AliDNS with DNSPod DoH (`https://doh.pub/dns-query`) in both built-in templates for regular and proxy-server DNS resolution.
+- Replace the AliDNS bootstrap address with `119.29.29.29`, preserving overseas DNS routing and ZJU campus DNS policies.
+- Synchronize English and Chinese configuration examples with the updated templates.
+
+**Full Changelog**: https://github.com/SubConv/SubConv/compare/v4.0.0...v4.0.1
+
 ## [v4.0.0] - 2026-10-26
 
 ### Breaking Changes
