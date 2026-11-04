@@ -1,5 +1,15 @@
 # Changelog
 
+## [v4.0.2] - 2026-11-04
+
+### Fixes
+
+- Restore AliDNS alongside DNSPod in both built-in templates, including the AliDNS bootstrap address.
+- Add Cloudflare and Google DoH to proxy-server DNS resolution for overseas connectivity.
+- Remove the redundant Cloudflare `1.0.0.1` DoH entries and synchronize English and Chinese configuration examples.
+
+**Full Changelog**: https://github.com/SubConv/SubConv/compare/v4.0.1...v4.0.2
+
 ## [v4.0.1] - 2026-10-31
 
 ### Fixes

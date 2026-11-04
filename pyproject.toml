@@ -1,6 +1,6 @@
 [project]
 name = "subconv"
-version = "4.0.1"
+version = "4.0.2"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi==0.162.0",
