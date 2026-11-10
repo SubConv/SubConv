@@ -5,7 +5,7 @@
     "build": "bunx --bun vite build"
   },
   "dependencies": {
-    "element-plus": "^2.14.7",
+    "element-plus": "^2.14.8",
     "vue": "^3.5.44"
   },
   "devDependencies": {
